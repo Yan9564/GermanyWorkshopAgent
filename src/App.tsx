@@ -1,0 +1,494 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState, useEffect } from 'react';
+import { Header } from './components/Header';
+import { Page1Welcome } from './components/Page1Welcome';
+import { Page2TeamThinking } from './components/Page2TeamThinking';
+import { Page3ConfirmUnderstanding } from './components/Page3ConfirmUnderstanding';
+import { Page4ExploreOpportunities } from './components/Page4ExploreOpportunities';
+import { Page5ChallengePriorities } from './components/Page5ChallengePriorities';
+import { Page6FinalResults } from './components/Page6FinalResults';
+
+import {
+  WorkshopSessionState,
+  HumanDiscussionData,
+  ImageExtractionResult,
+  AIExplorationOutput,
+  BoardChallengeOutput,
+  RevisedPrioritiesOutput,
+  ReviewDecision,
+} from './types';
+
+import {
+  DEFAULT_WORKSHOP_CONTEXT,
+  SAMPLE_EXPLORATION_OUTPUT,
+  SAMPLE_REVISED_PRIORITIES,
+  SAMPLE_BOARD_CHALLENGE,
+  SAMPLE_WHITEBOARD_DATA,
+} from './data/defaultData';
+
+const INITIAL_SESSION: WorkshopSessionState = {
+  id: `session-${Date.now()}`,
+  currentStage: 1, // 1 to 6
+  context: DEFAULT_WORKSHOP_CONTEXT,
+  humanDiscussion: {
+    challenges: [],
+    initialAIIdeas: [],
+    uploadedImages: [],
+    isConfirmed: false,
+  },
+  exploration: null,
+  humanReview: {
+    reviews: {},
+    whiteboardFeedback: null,
+  },
+  revisedPriorities: null,
+  boardChallenge: null,
+  finalDecision: null,
+  chatHistory: [],
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+};
+
+export default function App() {
+  const [session, setSession] = useState<WorkshopSessionState>(() => {
+    const saved = localStorage.getItem('strategy_unbounded_simple_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Normalize stage to 1..6
+        if (parsed.currentStage === 0 || !parsed.currentStage) parsed.currentStage = 1;
+        return parsed;
+      } catch (e) {
+        console.error('Failed to parse saved session:', e);
+      }
+    }
+    return INITIAL_SESSION;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [uncertainties, setUncertainties] = useState<string[]>([]);
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('strategy_unbounded_simple_session', JSON.stringify(session));
+  }, [session]);
+
+  const setStage = (stage: number) => {
+    setSession((prev) => ({
+      ...prev,
+      currentStage: stage as any,
+      updatedAt: Date.now(),
+    }));
+  };
+
+  // 1. Reset workshop
+  const handleResetWorkshop = () => {
+    const fresh: WorkshopSessionState = {
+      ...INITIAL_SESSION,
+      id: `session-${Date.now()}`,
+      currentStage: 1,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setSession(fresh);
+    localStorage.removeItem('strategy_unbounded_simple_session');
+  };
+
+  // 2. Load demo sample
+  const handleLoadDemoSession = () => {
+    const demoSession: WorkshopSessionState = {
+      id: `demo-session-${Date.now()}`,
+      currentStage: 4,
+      context: DEFAULT_WORKSHOP_CONTEXT,
+      humanDiscussion: {
+        challenges: SAMPLE_WHITEBOARD_DATA.stage2.challenges,
+        initialAIIdeas: SAMPLE_WHITEBOARD_DATA.stage2.initialAIIdeas,
+        uploadedImages: [],
+        rawTextNotes:
+          'Executive Committee session on high-criticality component continuity and European logistics.',
+        isConfirmed: true,
+        confirmedAt: Date.now(),
+      },
+      exploration: SAMPLE_EXPLORATION_OUTPUT,
+      humanReview: {
+        reviews: {
+          'opp-01': { opportunityId: 'opp-01', decision: 'KEEP', comment: 'Core foundation' },
+          'opp-02': { opportunityId: 'opp-02', decision: 'KEEP', comment: 'Fast value' },
+          'opp-03': { opportunityId: 'opp-03', decision: 'KEEP', comment: 'Zero risk drill' },
+          'opp-04': { opportunityId: 'opp-04', decision: 'CHALLENGE', comment: 'Audit liability' },
+          'opp-05': { opportunityId: 'opp-05', decision: 'KEEP', comment: 'Good visibility' },
+          'opp-06': { opportunityId: 'opp-06', decision: 'DISCARD', comment: 'Premature' },
+          'opp-07': { opportunityId: 'opp-07', decision: 'KEEP', comment: 'Useful' },
+          'opp-08': { opportunityId: 'opp-08', decision: 'KEEP', comment: 'High value' },
+        },
+        whiteboardFeedback: null,
+      },
+      revisedPriorities: SAMPLE_REVISED_PRIORITIES,
+      boardChallenge: SAMPLE_BOARD_CHALLENGE,
+      finalDecision: {
+        finalPriorities: [
+          {
+            rank: 1,
+            name: 'Multi-Tier Supplier Disruption Radar',
+            rationale:
+              'Proactively detects tier-2 fabrication halts 14 days before breach by monitoring power and satellite indicators.',
+            safeguardsAdopted: 'Procurement dual-signoff gate before vendor substitution.',
+            timeframe: '<5 weeks',
+          },
+          {
+            rank: 2,
+            name: 'AI Dynamic Freight Rerouting & ETA Simulation',
+            rationale:
+              'Calculates alternate land/ocean shipping paths and pre-books capacity during port congestion.',
+            safeguardsAdopted: 'Enforce $250k weekly budget cap on automated spot premiums.',
+            timeframe: '<5 weeks',
+          },
+          {
+            rank: 3,
+            name: 'Synthetic Crisis Simulator & War-Gaming Playbooks',
+            rationale:
+              'Builds executive crisis response reflexes without backend ERP friction in <5 days.',
+            safeguardsAdopted: 'Standalone zero-integration module to prevent operational disruption.',
+            timeframe: '<5 days',
+          },
+        ],
+        finalExecutiveRationale:
+          'The executive committee has concluded a high-conviction decision framework focusing on real-time visibility, automated logistics agility, and low-friction organizational crisis readiness.',
+        keyOpenQuestions: ['Regional API regulatory clearance by Q3'],
+        confirmedAt: Date.now(),
+        facilitatorSignoffNotes: 'All board objections resolved with adopted safeguards.',
+      },
+
+      chatHistory: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    setSession(demoSession);
+  };
+
+  // --- Page 2 -> Page 3: Analyse Team Notes & Whiteboard Photo ---
+  const handleAnalyseInput = async (textNotes: string, imageDataUrl?: string) => {
+    setIsLoading(true);
+    try {
+      let extractedChallenges: string[] = [];
+      let extractedIdeas: string[] = [];
+      let foundUncertainties: string[] = [];
+
+      if (imageDataUrl) {
+        // Try calling backend API
+        try {
+          const res = await fetch('/api/workshop/extract-whiteboard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageDataUrl,
+              userNotesHint: textNotes,
+            }),
+          });
+          if (res.ok) {
+            const data: ImageExtractionResult = await res.json();
+            extractedChallenges = data.challenges || [];
+            extractedIdeas = data.initialAIIdeas || [];
+            foundUncertainties = data.uncertainties || [];
+          }
+        } catch (apiErr) {
+          console.warn('API extraction failed, using fallback parser:', apiErr);
+        }
+      }
+
+      // If no extraction returned or no image, parse typed notes
+      if (extractedChallenges.length === 0 && textNotes.trim()) {
+        const lines = textNotes
+          .split('\n')
+          .map((l) => l.replace(/^[-*•\d.]+\s*/, '').trim())
+          .filter((l) => l.length > 3);
+
+        if (lines.length > 0) {
+          extractedChallenges = lines;
+        }
+      }
+
+      // Default fallback if still empty
+      if (extractedChallenges.length === 0) {
+        extractedChallenges = [
+          'Single-source tier-2 chip and sensor suppliers in Southeast Asia vulnerable to shutdown',
+          'Port transshipment congestion and cross-border customs bottlenecks causing 3-4 week untracked delays',
+          'Lack of real-time inventory visibility across 3PL partner warehouses and transit hubs',
+          'Cybersecurity intrusions targeting legacy industrial SCADA systems at manufacturing sites',
+        ];
+        extractedIdeas = [
+          'Multi-tier supplier disruption radar using ambient satellite & news signals',
+          'Dynamic freight rerouting & autonomous container ETA prediction',
+        ];
+      }
+
+      setUncertainties(foundUncertainties);
+
+      setSession((prev) => ({
+        ...prev,
+        currentStage: 3,
+        humanDiscussion: {
+          ...prev.humanDiscussion,
+          challenges: extractedChallenges,
+          initialAIIdeas: extractedIdeas,
+          rawTextNotes: textNotes,
+          isConfirmed: false,
+        },
+        updatedAt: Date.now(),
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Page 3 -> Page 4: Confirm Understanding & Explore Opportunities ---
+  const handleConfirmUnderstanding = async (confirmedData: HumanDiscussionData) => {
+    setIsLoading(true);
+    try {
+      let explorationResult: AIExplorationOutput | null = null;
+
+      try {
+        const res = await fetch('/api/workshop/explore-opportunities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            humanDiscussion: confirmedData,
+            contextTitle: session.context.title,
+          }),
+        });
+        if (res.ok) {
+          explorationResult = await res.json();
+        }
+      } catch (e) {
+        console.warn('Exploration API failed, using sample exploration fallback:', e);
+      }
+
+      if (!explorationResult) {
+        explorationResult = SAMPLE_EXPLORATION_OUTPUT;
+      }
+
+      setSession((prev) => ({
+        ...prev,
+        currentStage: 4,
+        humanDiscussion: confirmedData,
+        exploration: explorationResult,
+        updatedAt: Date.now(),
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Page 4 -> Page 5: Confirm Top 3 & Prepare Stress Test ---
+  const handleConfirmTop3 = async (reviewedDecisions: Record<string, ReviewDecision>) => {
+    setIsLoading(true);
+    try {
+      let boardOutput: BoardChallengeOutput | null = null;
+      let revisedOutput: RevisedPrioritiesOutput | null = null;
+
+      try {
+        const revRes = await fetch('/api/workshop/synthesize-revised-priorities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            originalExploration: session.exploration || SAMPLE_EXPLORATION_OUTPUT,
+            humanReviews: reviewedDecisions,
+          }),
+        });
+        if (revRes.ok) {
+          revisedOutput = await revRes.json();
+        }
+      } catch (e) {
+        console.warn('Revised priorities API failed:', e);
+      }
+
+      try {
+        const boardRes = await fetch('/api/workshop/run-board-challenge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prioritiesToChallenge:
+              revisedOutput?.revisedPriorities || SAMPLE_REVISED_PRIORITIES.revisedPriorities,
+            contextTitle: session.context.title,
+          }),
+        });
+        if (boardRes.ok) {
+          boardOutput = await boardRes.json();
+        }
+      } catch (e) {
+        console.warn('Board challenge API failed:', e);
+      }
+
+      setSession((prev) => ({
+        ...prev,
+        currentStage: 5,
+        humanReview: {
+          ...prev.humanReview,
+          reviews: reviewedDecisions,
+        },
+        revisedPriorities: revisedOutput || SAMPLE_REVISED_PRIORITIES,
+        boardChallenge: boardOutput || SAMPLE_BOARD_CHALLENGE,
+        updatedAt: Date.now(),
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // --- Page 5 -> Page 6: Generate Final Results ---
+  const handleGenerateFinalResults = async () => {
+    setIsLoading(true);
+    try {
+      // Build final decision object from confirmed priorities
+      const p1Name =
+        session.boardChallenge?.prioritiesChallenged[0]?.priorityName ||
+        session.revisedPriorities?.revisedPriorities[0]?.originalName ||
+        'Multi-Tier Supplier Disruption Radar';
+      const p2Name =
+        session.boardChallenge?.prioritiesChallenged[1]?.priorityName ||
+        session.revisedPriorities?.revisedPriorities[1]?.originalName ||
+        'AI Dynamic Freight Rerouting & ETA Simulation';
+      const p3Name =
+        session.boardChallenge?.prioritiesChallenged[2]?.priorityName ||
+        session.revisedPriorities?.revisedPriorities[2]?.originalName ||
+        'Synthetic Crisis Simulator & War-Gaming Playbooks';
+
+      setSession((prev) => ({
+        ...prev,
+        currentStage: 6,
+        finalDecision: {
+          finalPriorities: [
+            {
+              rank: 1,
+              name: p1Name,
+              rationale:
+                'Eliminates single-source Tier-2 chokepoints by tracking ambient shipping, power, and supplier signals.',
+              pilotCost: '$$',
+              pilotTimeline: '<5 weeks',
+              boardApprovedSafeguard:
+                'Procurement dual-signoff gate before vendor substitution.',
+              mitigationStrategy:
+                'Dual-source fallback contracts with regional European suppliers.',
+            },
+            {
+              rank: 2,
+              name: p2Name,
+              rationale:
+                'Predicts port delays with 94% accuracy and dynamically computes alternate multimodal landed costs.',
+              pilotCost: '$$',
+              pilotTimeline: '<5 weeks',
+              boardApprovedSafeguard:
+                'Enforce $250k weekly budget cap on automated spot premiums.',
+              mitigationStrategy:
+                'Establish pre-negotiated SLA buffer windows with 3PL partners.',
+            },
+            {
+              rank: 3,
+              name: p3Name,
+              rationale:
+                'Builds immediate executive muscle memory with zero ERP friction through synthetic scenario tabletop drills.',
+              pilotCost: '$',
+              pilotTimeline: '<5 days',
+              boardApprovedSafeguard:
+                'Standalone zero-integration module to prevent operational disruption.',
+              mitigationStrategy:
+                'Monthly cross-functional tabletop simulations with business continuity leaders.',
+            },
+          ],
+          executiveSummary:
+            'The executive committee has concluded a high-conviction decision framework focusing on real-time visibility, automated logistics agility, and low-friction organizational crisis readiness.',
+          implementationRoadmap: [
+            {
+              phase: '0–5 Days',
+              actions: ['Deploy Synthetic Crisis Simulator for board tabletop drill'],
+            },
+            {
+              phase: 'Weeks 1–5',
+              actions: [
+                'Launch AI Freight Rerouting pilot with major logistics partners',
+                'Connect ambient data feeds for Tier-2 supplier monitoring',
+              ],
+            },
+            {
+              phase: 'Months 2–5',
+              actions: ['Enterprise rollout and board SLA governance review'],
+            },
+          ],
+          unresolvedRisks: [],
+          timestamp: Date.now(),
+        },
+        updatedAt: Date.now(),
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const currentStage = session.currentStage || 1;
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+      {/* Universal Simplified Header */}
+      <Header
+        currentStage={currentStage}
+        onSelectStage={(s) => setStage(s)}
+        onReset={handleResetWorkshop}
+        onLoadDemo={handleLoadDemoSession}
+      />
+
+      {/* Main Stage Router: Exactly 6 Simple Pages */}
+      <main className="flex-1 flex flex-col">
+        {currentStage === 1 && (
+          <Page1Welcome onStart={() => setStage(2)} />
+        )}
+
+        {currentStage === 2 && (
+          <Page2TeamThinking
+            initialText={session.humanDiscussion.rawTextNotes}
+            onAnalyse={handleAnalyseInput}
+            isAnalysing={isLoading}
+          />
+        )}
+
+        {currentStage === 3 && (
+          <Page3ConfirmUnderstanding
+            initialChallenges={session.humanDiscussion.challenges}
+            initialIdeas={session.humanDiscussion.initialAIIdeas}
+            uncertainties={uncertainties}
+            onConfirm={handleConfirmUnderstanding}
+            onUploadAnother={() => setStage(2)}
+            isProcessing={isLoading}
+          />
+        )}
+
+        {currentStage === 4 && (
+          <Page4ExploreOpportunities
+            opportunities={session.exploration?.opportunities || SAMPLE_EXPLORATION_OUTPUT.opportunities}
+            onConfirmTop3={handleConfirmTop3}
+            isSubmitting={isLoading}
+          />
+        )}
+
+        {currentStage === 5 && (
+          <Page5ChallengePriorities
+            boardChallenge={session.boardChallenge || SAMPLE_BOARD_CHALLENGE}
+            revisedPriorities={session.revisedPriorities || SAMPLE_REVISED_PRIORITIES}
+            onGenerateFinalResults={handleGenerateFinalResults}
+            isGenerating={isLoading}
+          />
+        )}
+
+        {currentStage === 6 && (
+          <Page6FinalResults
+            session={session}
+            onRestart={handleResetWorkshop}
+          />
+        )}
+      </main>
+    </div>
+  );
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Strategy Unbounded",
+  "description": "Multimodal AI executive workshop facilitator for resilient strategy and service continuity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
