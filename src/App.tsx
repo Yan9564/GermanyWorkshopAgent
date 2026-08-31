@@ -11,6 +11,8 @@ import { Page3ConfirmUnderstanding } from './components/Page3ConfirmUnderstandin
 import { Page4ExploreOpportunities } from './components/Page4ExploreOpportunities';
 import { Page5ChallengePriorities } from './components/Page5ChallengePriorities';
 import { Page6FinalResults } from './components/Page6FinalResults';
+import { WorkshopContextForm } from './components/WorkshopContextForm';
+import { WorkshopContextSummary } from './components/WorkshopContextSummary';
 
 import {
   WorkshopSessionState,
@@ -20,6 +22,10 @@ import {
   BoardChallengeOutput,
   RevisedPrioritiesOutput,
   ReviewDecision,
+  WorkshopContext,
+  WorkshopChallenge,
+  WorkshopInteractionInput,
+  AIOpportunity,
 } from './types';
 
 import {
@@ -29,11 +35,15 @@ import {
   SAMPLE_BOARD_CHALLENGE,
   SAMPLE_WHITEBOARD_DATA,
 } from './data/defaultData';
+import { getMainStageForStep } from './workshopStages';
+import { createInteractionEvent, createResearchId } from './researchLog';
 
 const INITIAL_SESSION: WorkshopSessionState = {
   id: `session-${Date.now()}`,
   currentStage: 1, // 1 to 6
+  mainStage: 'search',
   context: DEFAULT_WORKSHOP_CONTEXT,
+  challengeEntities: [],
   humanDiscussion: {
     challenges: [],
     initialAIIdeas: [],
@@ -49,6 +59,7 @@ const INITIAL_SESSION: WorkshopSessionState = {
   boardChallenge: null,
   finalDecision: null,
   chatHistory: [],
+  interactions: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -61,6 +72,23 @@ export default function App() {
         const parsed = JSON.parse(saved);
         // Normalize stage to 1..6
         if (parsed.currentStage === 0 || !parsed.currentStage) parsed.currentStage = 1;
+        parsed.mainStage = getMainStageForStep(parsed.currentStage);
+        parsed.context = {
+          ...DEFAULT_WORKSHOP_CONTEXT,
+          ...(parsed.context || {}),
+          workshopTopic: parsed.context?.workshopTopic || parsed.context?.title || '',
+          workshopObjective: parsed.context?.workshopObjective || parsed.context?.objective || '',
+          additionalContext: parsed.context?.additionalContext || parsed.context?.background || '',
+        };
+        parsed.interactions = Array.isArray(parsed.interactions) ? parsed.interactions : [];
+        parsed.challengeEntities = Array.isArray(parsed.challengeEntities)
+          ? parsed.challengeEntities
+          : (parsed.humanDiscussion?.challenges || []).map((text: string) => ({
+              id: createResearchId('challenge'),
+              text,
+              source: 'ai',
+              originalAIText: text,
+            }));
         return parsed;
       } catch (e) {
         console.error('Failed to parse saved session:', e);
@@ -71,6 +99,7 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [uncertainties, setUncertainties] = useState<string[]>([]);
+  const [isEditingContext, setIsEditingContext] = useState(false);
 
   // Sync to local storage
   useEffect(() => {
@@ -81,6 +110,37 @@ export default function App() {
     setSession((prev) => ({
       ...prev,
       currentStage: stage as any,
+      mainStage: getMainStageForStep(stage),
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const logInteraction = (input: WorkshopInteractionInput) => {
+    setSession((prev) => ({
+      ...prev,
+      interactions: [...(prev.interactions || []), createInteractionEvent(prev.id, input)],
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const updateChallenges = (challenges: WorkshopChallenge[]) => {
+    setSession((prev) => ({
+      ...prev,
+      challengeEntities: challenges,
+      humanDiscussion: {
+        ...prev.humanDiscussion,
+        challenges: challenges.map((challenge) => challenge.text),
+      },
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const updateOpportunities = (opportunities: AIOpportunity[]) => {
+    setSession((prev) => ({
+      ...prev,
+      exploration: prev.exploration
+        ? { ...prev.exploration, opportunities }
+        : { ...SAMPLE_EXPLORATION_OUTPUT, opportunities },
       updatedAt: Date.now(),
     }));
   };
@@ -91,11 +151,24 @@ export default function App() {
       ...INITIAL_SESSION,
       id: `session-${Date.now()}`,
       currentStage: 1,
+      mainStage: 'search',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
     setSession(fresh);
+    setIsEditingContext(false);
     localStorage.removeItem('strategy_unbounded_simple_session');
+  };
+
+  const handleSaveContext = (context: WorkshopContext) => {
+    setSession((prev) => ({
+      ...prev,
+      context,
+      currentStage: prev.currentStage === 1 ? 2 : prev.currentStage,
+      mainStage: prev.currentStage === 1 ? 'search' : prev.mainStage,
+      updatedAt: Date.now(),
+    }));
+    setIsEditingContext(false);
   };
 
   // 2. Load demo sample
@@ -103,7 +176,14 @@ export default function App() {
     const demoSession: WorkshopSessionState = {
       id: `demo-session-${Date.now()}`,
       currentStage: 4,
+      mainStage: 'representation',
       context: DEFAULT_WORKSHOP_CONTEXT,
+      challengeEntities: SAMPLE_WHITEBOARD_DATA.stage2.challenges.map((text) => ({
+        id: createResearchId('challenge'),
+        text,
+        source: 'ai',
+        originalAIText: text,
+      })),
       humanDiscussion: {
         challenges: SAMPLE_WHITEBOARD_DATA.stage2.challenges,
         initialAIIdeas: SAMPLE_WHITEBOARD_DATA.stage2.initialAIIdeas,
@@ -164,6 +244,7 @@ export default function App() {
       },
 
       chatHistory: [],
+      interactions: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -187,6 +268,7 @@ export default function App() {
             body: JSON.stringify({
               imageDataUrl,
               userNotesHint: textNotes,
+              workshopContext: session.context,
             }),
           });
           if (res.ok) {
@@ -228,9 +310,18 @@ export default function App() {
 
       setUncertainties(foundUncertainties);
 
+      const challengeSource = imageDataUrl ? 'ai' : textNotes.trim() ? 'human' : 'ai';
+      const challengeEntities: WorkshopChallenge[] = extractedChallenges.map((text) => ({
+        id: createResearchId('challenge'),
+        text,
+        source: challengeSource,
+        ...(challengeSource === 'ai' ? { originalAIText: text } : {}),
+      }));
+
       setSession((prev) => ({
         ...prev,
         currentStage: 3,
+        mainStage: 'search',
         humanDiscussion: {
           ...prev.humanDiscussion,
           challenges: extractedChallenges,
@@ -238,6 +329,7 @@ export default function App() {
           rawTextNotes: textNotes,
           isConfirmed: false,
         },
+        challengeEntities,
         updatedAt: Date.now(),
       }));
     } finally {
@@ -258,6 +350,7 @@ export default function App() {
           body: JSON.stringify({
             humanDiscussion: confirmedData,
             contextTitle: session.context.title,
+            workshopContext: session.context,
           }),
         });
         if (res.ok) {
@@ -271,9 +364,19 @@ export default function App() {
         explorationResult = SAMPLE_EXPLORATION_OUTPUT;
       }
 
+      explorationResult = {
+        ...explorationResult,
+        opportunities: explorationResult.opportunities.map((opportunity) => ({
+          ...opportunity,
+          source: opportunity.source || 'ai',
+          originalAIValue: opportunity.originalAIValue || { ...opportunity },
+        })),
+      };
+
       setSession((prev) => ({
         ...prev,
         currentStage: 4,
+        mainStage: 'representation',
         humanDiscussion: confirmedData,
         exploration: explorationResult,
         updatedAt: Date.now(),
@@ -297,6 +400,7 @@ export default function App() {
           body: JSON.stringify({
             originalExploration: session.exploration || SAMPLE_EXPLORATION_OUTPUT,
             humanReviews: reviewedDecisions,
+            workshopContext: session.context,
           }),
         });
         if (revRes.ok) {
@@ -311,9 +415,9 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prioritiesToChallenge:
-              revisedOutput?.revisedPriorities || SAMPLE_REVISED_PRIORITIES.revisedPriorities,
+            revisedPriorities: revisedOutput || SAMPLE_REVISED_PRIORITIES,
             contextTitle: session.context.title,
+            workshopContext: session.context,
           }),
         });
         if (boardRes.ok) {
@@ -326,6 +430,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 5,
+        mainStage: 'aggregation',
         humanReview: {
           ...prev.humanReview,
           reviews: reviewedDecisions,
@@ -360,6 +465,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 6,
+        mainStage: 'aggregation',
         finalDecision: {
           finalPriorities: [
             {
@@ -440,13 +546,23 @@ export default function App() {
         onLoadDemo={handleLoadDemoSession}
       />
 
-      {/* Main Stage Router: Exactly 6 Simple Pages */}
+      {/* Existing focused pages act as sub-steps within exactly three main stages. */}
       <main className="flex-1 flex flex-col">
-        {currentStage === 1 && (
-          <Page1Welcome onStart={() => setStage(2)} />
+        {isEditingContext ? (
+          <WorkshopContextForm
+            initialContext={session.context}
+            onSave={handleSaveContext}
+            onCancel={currentStage > 1 ? () => setIsEditingContext(false) : undefined}
+          />
+        ) : currentStage === 1 ? (
+          <Page1Welcome onStart={() => setIsEditingContext(true)} />
+        ) : null}
+
+        {!isEditingContext && currentStage > 1 && (
+          <WorkshopContextSummary context={session.context} onEdit={() => setIsEditingContext(true)} />
         )}
 
-        {currentStage === 2 && (
+        {!isEditingContext && currentStage === 2 && (
           <Page2TeamThinking
             initialText={session.humanDiscussion.rawTextNotes}
             onAnalyse={handleAnalyseInput}
@@ -454,26 +570,47 @@ export default function App() {
           />
         )}
 
-        {currentStage === 3 && (
+        {!isEditingContext && currentStage === 3 && (
           <Page3ConfirmUnderstanding
-            initialChallenges={session.humanDiscussion.challenges}
+            initialChallenges={session.challengeEntities || []}
             initialIdeas={session.humanDiscussion.initialAIIdeas}
             uncertainties={uncertainties}
             onConfirm={handleConfirmUnderstanding}
             onUploadAnother={() => setStage(2)}
             isProcessing={isLoading}
+            onChallengesChange={updateChallenges}
+            onInteraction={logInteraction}
           />
         )}
 
-        {currentStage === 4 && (
+        {!isEditingContext && currentStage === 4 && (
           <Page4ExploreOpportunities
             opportunities={session.exploration?.opportunities || SAMPLE_EXPLORATION_OUTPUT.opportunities}
             onConfirmTop3={handleConfirmTop3}
             isSubmitting={isLoading}
+            initialReviews={Object.fromEntries(
+              Object.entries(session.humanReview?.reviews || {}).map(([id, review]) => [
+                id,
+                (review as { decision: ReviewDecision }).decision,
+              ])
+            )}
+            onReviewsChange={(reviews) => setSession((prev) => ({
+              ...prev,
+              humanReview: {
+                ...prev.humanReview,
+                reviews: Object.fromEntries(Object.entries(reviews).map(([id, decision]) => [
+                  id,
+                  { opportunityId: id, decision, comment: prev.humanReview?.reviews[id]?.comment || '' },
+                ])),
+              },
+              updatedAt: Date.now(),
+            }))}
+            onOpportunitiesChange={updateOpportunities}
+            onInteraction={logInteraction}
           />
         )}
 
-        {currentStage === 5 && (
+        {!isEditingContext && currentStage === 5 && (
           <Page5ChallengePriorities
             boardChallenge={session.boardChallenge || SAMPLE_BOARD_CHALLENGE}
             revisedPriorities={session.revisedPriorities || SAMPLE_REVISED_PRIORITIES}
@@ -482,7 +619,7 @@ export default function App() {
           />
         )}
 
-        {currentStage === 6 && (
+        {!isEditingContext && currentStage === 6 && (
           <Page6FinalResults
             session={session}
             onRestart={handleResetWorkshop}

@@ -13,36 +13,140 @@ import {
   AlertTriangle,
   XCircle,
   Award,
+  Edit2,
+  Trash2,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+  MessageSquare,
 } from 'lucide-react';
-import { AIOpportunity, ReviewDecision } from '../types';
+import { AIOpportunity, ReviewDecision, WorkshopInteractionInput } from '../types';
+import { createResearchId } from '../researchLog';
 
 interface Page4ExploreOpportunitiesProps {
   opportunities: AIOpportunity[];
   onConfirmTop3: (reviewedDecisions: Record<string, ReviewDecision>) => void;
   isSubmitting?: boolean;
+  initialReviews?: Record<string, ReviewDecision>;
+  onReviewsChange: (reviews: Record<string, ReviewDecision>) => void;
+  onOpportunitiesChange: (opportunities: AIOpportunity[]) => void;
+  onInteraction: (event: WorkshopInteractionInput) => void;
 }
 
 export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps> = ({
   opportunities,
   onConfirmTop3,
   isSubmitting = false,
+  initialReviews = {},
+  onReviewsChange,
+  onOpportunitiesChange,
+  onInteraction,
 }) => {
-  // Initialize reviews: Top 3 are KEEP by default
-  const [reviews, setReviews] = useState<Record<string, ReviewDecision>>(() => {
-    const initial: Record<string, ReviewDecision> = {};
-    opportunities.forEach((opp) => {
-      initial[opp.id] = opp.isTopPriority ? 'KEEP' : 'KEEP';
-    });
-    return initial;
-  });
+  const [items, setItems] = useState<AIOpportunity[]>(opportunities);
+  const [reviews, setReviews] = useState<Record<string, ReviewDecision>>(initialReviews);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [resonance, setResonance] = useState<'yes' | 'partly' | 'no' | ''>('');
+  const [feedback, setFeedback] = useState('');
 
   const handleDecision = (id: string, decision: ReviewDecision) => {
-    setReviews((prev) => ({
-      ...prev,
-      [id]: decision,
+    const previous = reviews[id]?.toLowerCase() || 'unclassified';
+    const next = { ...reviews, [id]: decision };
+    setReviews(next);
+    onReviewsChange(next);
+    onInteraction({
+      stage: 'aggregation', subStep: '3A', actionType: decision.toLowerCase() as Lowercase<ReviewDecision>,
+      entityType: 'opportunity', entityId: id, originalValue: previous,
+      newValue: decision.toLowerCase(),
+    });
+  };
+
+  const commitItems = (next: AIOpportunity[]) => {
+    setItems(next);
+    onOpportunitiesChange(next);
+  };
+
+  const startEdit = (opportunity: AIOpportunity) => {
+    setEditingId(opportunity.id);
+    setEditName(opportunity.name);
+    setEditDescription(opportunity.strategicOpportunity);
+  };
+
+  const saveEdit = (opportunity: AIOpportunity) => {
+    const name = editName.trim();
+    const description = editDescription.trim();
+    if (!name || !description) return;
+    const revised: AIOpportunity = {
+      ...opportunity,
+      name,
+      strategicOpportunity: description,
+      source: opportunity.source === 'human' ? 'human' : 'ai_edited_by_human',
+      originalAIValue: opportunity.originalAIValue || { ...opportunity },
+    };
+    if (name !== opportunity.name || description !== opportunity.strategicOpportunity) {
+      commitItems(items.map((item) => item.id === opportunity.id ? revised : item));
+      onInteraction({
+        stage: 'representation', subStep: '2A', actionType: 'edit', entityType: 'opportunity',
+        entityId: opportunity.id, originalValue: opportunity, newValue: revised,
+        metadata: { originalSource: opportunity.source || 'ai', currentSource: revised.source },
+      });
+    }
+    setEditingId(null);
+  };
+
+  const deleteOpportunity = (opportunity: AIOpportunity) => {
+    commitItems(items.filter((item) => item.id !== opportunity.id));
+    const nextReviews = { ...reviews };
+    delete nextReviews[opportunity.id];
+    setReviews(nextReviews);
+    onReviewsChange(nextReviews);
+    onInteraction({
+      stage: 'representation', subStep: '2A', actionType: 'delete', entityType: 'opportunity',
+      entityId: opportunity.id, originalValue: opportunity,
+      metadata: { source: opportunity.source || 'ai' },
+    });
+  };
+
+  const addOpportunity = () => {
+    const id = createResearchId('opportunity');
+    const added: AIOpportunity = {
+      id, number: String(items.length + 1).padStart(2, '0'), name: 'New participant opportunity',
+      challengesAddressed: [], whyNow: '', aiUseCase: '',
+      strategicOpportunity: 'Describe the strategic opportunity.', executionApproach: '',
+      requiredProprietaryData: '', relevantPublicData: '', cost: '$', timeline: '<5 weeks',
+      priorityTier: 'Medium', isTopPriority: false, source: 'human',
+    };
+    commitItems([...items, added]);
+    onInteraction({
+      stage: 'representation', subStep: '2A', actionType: 'add', entityType: 'opportunity',
+      entityId: id, newValue: added, metadata: { source: 'human' },
+    });
+    setExpandedId(id);
+    startEdit(added);
+  };
+
+  const moveOpportunity = (index: number, offset: -1 | 1) => {
+    const target = index + offset;
+    if (target < 0 || target >= items.length) return;
+    let next = [...items];
+    [next[index], next[target]] = [next[target], next[index]];
+    next = next.map((item, itemIndex) => ({
+      ...item,
+      isTopPriority: itemIndex < 3,
+      top3Ranking: itemIndex < 3 ? itemIndex + 1 : undefined,
     }));
+    commitItems(next);
+    [items[index], items[target]].forEach((opportunity) => {
+      const previousRank = items.findIndex((item) => item.id === opportunity.id) + 1;
+      const newRank = next.findIndex((item) => item.id === opportunity.id) + 1;
+      onInteraction({
+        stage: 'aggregation', subStep: '3A', actionType: 'rank_change', entityType: 'opportunity',
+        entityId: opportunity.id, originalValue: { rank: previousRank }, newValue: { rank: newRank },
+      });
+    });
   };
 
   const toggleExpand = (id: string) => {
@@ -58,22 +162,22 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
       {/* Header Task */}
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 font-mono block mb-2">
-          Step 3 of 5 • Strategic Opportunities
+          Representation • Sub-step 2A — Examine Opportunities
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
-          AI found {opportunities.length} strategic opportunities
+          AI found {items.length} strategic opportunities
         </h1>
         <p className="text-sm text-slate-500">
-          Which opportunities make sense to your group? Proposed Top 3 are highlighted below.
+          Make each use case concrete: examine its data, AI approach, implementation, outputs, value, and assumptions before reviewing it.
         </p>
       </div>
 
       {/* Opportunities List */}
       <div className="space-y-3">
-        {opportunities.map((opp, index) => {
+        {items.map((opp, index) => {
           const rank = index + 1;
           const isTop3 = opp.isTopPriority || rank <= 3;
-          const currentDecision = reviews[opp.id] || 'KEEP';
+          const currentDecision = reviews[opp.id];
           const isExpanded = expandedId === opp.id;
 
           return (
@@ -100,9 +204,20 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                        {opp.name}
-                      </h3>
+                      {editingId === opp.id ? (
+                        <div className="space-y-2 w-full">
+                          <input value={editName} onChange={(event) => setEditName(event.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-indigo-300 text-sm font-bold" aria-label="Opportunity title" />
+                          <textarea value={editDescription} onChange={(event) => setEditDescription(event.target.value)} rows={2} className="w-full px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs" aria-label="Opportunity description" />
+                          <div className="flex gap-2">
+                            <button onClick={() => saveEdit(opp)} className="text-[11px] font-bold text-indigo-700">Save revision</button>
+                            <button onClick={() => setEditingId(null)} className="text-[11px] text-slate-500">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
+                          {opp.name}
+                        </h3>
+                      )}
                       {isTop3 && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <Award className="w-3 h-3 text-emerald-600" />
@@ -111,9 +226,11 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                       )}
                     </div>
 
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      {opp.strategicOpportunity || opp.whyNow || 'High-impact AI capability addressing core operational vulnerabilities.'}
-                    </p>
+                    {editingId !== opp.id && (
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        {opp.strategicOpportunity || opp.whyNow || 'High-impact AI capability addressing core operational vulnerabilities.'}
+                      </p>
+                    )}
 
                     {/* Collapsible View Details Toggle */}
                     <button
@@ -174,6 +291,13 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                 </div>
               </div>
 
+              <div className="px-5 pb-3 flex items-center justify-end gap-1 border-t border-slate-100 pt-2">
+                <button onClick={() => moveOpportunity(index, -1)} disabled={index === 0} title="Move up" className="p-1.5 text-slate-400 hover:text-indigo-700 disabled:opacity-25"><ArrowUp className="w-3.5 h-3.5" /></button>
+                <button onClick={() => moveOpportunity(index, 1)} disabled={index === items.length - 1} title="Move down" className="p-1.5 text-slate-400 hover:text-indigo-700 disabled:opacity-25"><ArrowDown className="w-3.5 h-3.5" /></button>
+                <button onClick={() => startEdit(opp)} title="Edit opportunity" className="p-1.5 text-slate-400 hover:text-indigo-700"><Edit2 className="w-3.5 h-3.5" /></button>
+                <button onClick={() => deleteOpportunity(opp)} title="Delete opportunity" className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+
               {/* Collapsed Details: Progressive Disclosure */}
               {isExpanded && (
                 <div className="px-5 pb-5 pt-2 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl text-xs space-y-3 text-slate-700">
@@ -187,16 +311,27 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                       </p>
                     </div>
 
+                    {(opp.relevantStakeholders || opp.keyAssumption) && (
+                      <div>
+                        <span className="font-bold text-slate-900 block mb-0.5">
+                          Stakeholders &amp; Key Assumption:
+                        </span>
+                        <p className="text-slate-600">
+                          {opp.relevantStakeholders || 'Confirm accountable stakeholders'} · {opp.keyAssumption || 'Validate the operating assumptions with participants'}
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Execution Approach:
+                        Implementation &amp; AI Approach:
                       </span>
                       <p className="text-slate-600">{opp.executionApproach}</p>
                     </div>
 
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Data Dependencies:
+                        Required Data:
                       </span>
                       <p className="text-slate-600">
                         Proprietary: {opp.requiredProprietaryData} | Public: {opp.relevantPublicData}
@@ -205,10 +340,10 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
 
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Cost & Timeline:
+                        Expected Value, Output &amp; Assumptions:
                       </span>
                       <p className="text-slate-600">
-                        Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>
+                        {opp.potentialValue || opp.strategicOpportunity} Output: {opp.aiUseCase}. Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>. Validate data access and adoption assumptions during review.
                       </p>
                     </div>
                   </div>
@@ -217,6 +352,36 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
             </div>
           );
         })}
+      </div>
+
+      <button onClick={addOpportunity} className="mt-4 text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1.5">
+        <Plus className="w-3.5 h-3.5" /> Add participant opportunity
+      </button>
+
+      <div className="mt-7 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <MessageSquare className="w-4 h-4 text-indigo-600" />
+          <h3 className="text-sm font-bold text-slate-900">Do these opportunities resonate with your group?</h3>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {(['yes', 'partly', 'no'] as const).map((value) => (
+            <button key={value} onClick={() => setResonance(value)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${resonance === value ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200'}`}>
+              {value === 'yes' ? 'Yes' : value === 'partly' ? 'Partly' : 'No'}
+            </button>
+          ))}
+        </div>
+        <textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} rows={2} placeholder="What would you change? (optional)" className="w-full p-3 rounded-xl border border-slate-200 text-sm resize-y" />
+        <button
+          disabled={!resonance && !feedback.trim()}
+          onClick={() => onInteraction({
+            stage: 'representation', subStep: '2A', actionType: 'feedback', entityType: 'feedback',
+            newValue: { resonance: resonance || null, comment: feedback.trim() },
+            metadata: { prompt: 'opportunity_resonance' },
+          })}
+          className="mt-2 text-xs font-bold text-indigo-700 disabled:text-slate-300"
+        >
+          Save feedback
+        </button>
       </div>
 
       {/* Primary Action Button */}
@@ -234,7 +399,7 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
             </>
           ) : (
             <>
-              <span>Confirm Top 3</span>
+              <span>Continue to Aggregation</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

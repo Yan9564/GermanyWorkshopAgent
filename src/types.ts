@@ -3,7 +3,59 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { MainStage } from './workshopStages';
+
 export type WorkshopStageId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export type EntitySource = 'ai' | 'human' | 'ai_edited_by_human';
+
+export type InteractionActionType =
+  | 'edit'
+  | 'add'
+  | 'delete'
+  | 'keep'
+  | 'challenge'
+  | 'discard'
+  | 'rank_change'
+  | 'select'
+  | 'deselect'
+  | 'feedback'
+  | 'regenerate'
+  | 'other';
+
+export type InteractionEntityType =
+  | 'challenge'
+  | 'opportunity'
+  | 'priority'
+  | 'representation'
+  | 'feedback'
+  | 'other';
+
+export interface WorkshopInteractionEvent {
+  id: string;
+  timestamp: string;
+  sessionId?: string;
+  stage: MainStage;
+  subStep?: string;
+  actionType: InteractionActionType;
+  entityType: InteractionEntityType;
+  entityId?: string;
+  originalValue?: unknown;
+  newValue?: unknown;
+  metadata?: Record<string, unknown>;
+}
+
+export type WorkshopInteractionInput = Omit<
+  WorkshopInteractionEvent,
+  'id' | 'timestamp' | 'sessionId'
+>;
+
+export interface WorkshopChallenge {
+  id: string;
+  text: string;
+  source: EntitySource;
+  originalAIText?: string;
+}
 
 export interface WorkshopContext {
   title: string;
@@ -11,6 +63,17 @@ export interface WorkshopContext {
   background: string;
   coreQuestion: string;
   objective: string;
+  organization?: string;
+  industry?: string;
+  businessUnit?: string;
+  workshopTopic?: string;
+  workshopObjective?: string;
+  processScope?: string;
+  stakeholders?: string;
+  currentChallenges?: string;
+  strategicPriorities?: string;
+  constraints?: string;
+  additionalContext?: string;
 }
 
 export interface UploadedWhiteboard {
@@ -58,12 +121,17 @@ export interface AIOpportunity {
   executionApproach: string;
   requiredProprietaryData: string;
   relevantPublicData: string;
+  relevantStakeholders?: string;
+  keyAssumption?: string;
+  potentialValue?: string;
   cost: CostTier;
   timeline: TimelineTier;
   priorityTier: PriorityLevel;
   isTopPriority: boolean;
   top3Ranking?: number;
   prioritizationRationale?: string;
+  source?: EntitySource;
+  originalAIValue?: Partial<AIOpportunity>;
 }
 
 export interface ChallengeAssessment {
@@ -110,6 +178,7 @@ export interface WhiteboardFeedbackExtraction {
 }
 
 export interface RevisedPriority {
+  id: string;
   rank: number;
   originalOpportunityId?: string;
   originalName: string;
@@ -194,7 +263,10 @@ export interface ChatMessage {
 export interface WorkshopSessionState {
   id?: string;
   currentStage: WorkshopStageId;
+  /** Semantic stage used by new integrations; currentStage remains for saved-session compatibility. */
+  mainStage?: MainStage;
   context: WorkshopContext;
+  challengeEntities?: WorkshopChallenge[];
   humanDiscussion: HumanDiscussionData;
   exploration?: AIExplorationOutput | null;
   aiExploration?: AIExplorationOutput | null;
@@ -208,6 +280,7 @@ export interface WorkshopSessionState {
   boardChallenge: BoardChallengeOutput | null;
   finalDecision: FinalHumanDecision | null;
   chatHistory?: ChatMessage[];
+  interactions: WorkshopInteractionEvent[];
   isLoading?: boolean;
   loadingMessage?: string;
   lastUpdated?: number;
