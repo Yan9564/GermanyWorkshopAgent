@@ -376,7 +376,7 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 font-mono block mb-1">
-            Step 5 of 5 • Final Executive Results
+            Aggregation • Sub-step 3C — Final Decision &amp; Report
           </span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif-title">
             Two-Page Executive Strategy Deck

@@ -95,7 +95,7 @@ export const Page5ChallengePriorities: React.FC<Page5ChallengePrioritiesProps> =
       {/* Header Task */}
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-amber-600 font-mono block mb-2">
-          Step 4 of 5 • Board & Adversarial Stress-Test
+          Aggregation • Sub-step 3B — Stress Test
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
           Stress-test your Top 3
