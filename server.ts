@@ -35,7 +35,7 @@ async function startServer() {
     });
   });
 
-  // Stage 2: Extract structured text & challenges from whiteboard photo
+  // SEARCH / Identify Challenges: extract structured text from a whiteboard photo
   app.post('/api/workshop/extract-whiteboard', async (req, res) => {
     try {
       const { imageDataUrl, userNotesHint } = req.body;
@@ -50,7 +50,7 @@ async function startServer() {
     }
   });
 
-  // Stage 3: Explore AI opportunities based on confirmed human challenges
+  // SEARCH / Explore AI Opportunities based on confirmed human challenges
   app.post('/api/workshop/explore-opportunities', async (req, res) => {
     try {
       const { humanDiscussion, contextTitle } = req.body;
@@ -65,7 +65,7 @@ async function startServer() {
     }
   });
 
-  // Stage 4: Extract whiteboard feedback from critique photo
+  // AGGREGATION / Review: extract whiteboard feedback from critique photo
   app.post('/api/workshop/extract-whiteboard-feedback', async (req, res) => {
     try {
       const { imageDataUrl, currentOpportunities } = req.body;
@@ -80,7 +80,7 @@ async function startServer() {
     }
   });
 
-  // Stage 4: Synthesize revised priorities based on Keep/Challenge/Discard & Feedback
+  // AGGREGATION / Review: synthesize priorities from Keep/Challenge/Discard feedback
   app.post('/api/workshop/synthesize-revised-priorities', async (req, res) => {
     try {
       const { originalExploration, humanReviews, whiteboardFeedback } = req.body;
@@ -99,8 +99,8 @@ async function startServer() {
     }
   });
 
-  // Stage 5: Board Challenge stress-testing
-  app.post('/api/workshop/board-challenge', async (req, res) => {
+  // AGGREGATION / Stress Test: Board Challenge. Keep both route names for compatibility.
+  const boardChallengeHandler = async (req: express.Request, res: express.Response) => {
     try {
       const { revisedPriorities, contextTitle } = req.body;
       if (!revisedPriorities) {
@@ -115,16 +115,19 @@ async function startServer() {
       console.error('[API] /board-challenge error:', error);
       res.status(500).json({ error: error.message || 'Failed to run Board Challenge' });
     }
-  });
+  };
+  app.post('/api/workshop/board-challenge', boardChallengeHandler);
+  app.post('/api/workshop/run-board-challenge', boardChallengeHandler);
 
   // Facilitator Stage-Aware Assistant
   app.post('/api/workshop/facilitator-chat', async (req, res) => {
     try {
-      const { stage, message, sessionState } = req.body;
+      const { stage, mainStage, substep, message, sessionState } = req.body;
       const reply = await getFacilitatorStageResponse(
-        Number(stage) || 1,
+        mainStage || Number(stage) || 'search',
         message || '',
-        sessionState || {}
+        sessionState || {},
+        substep
       );
       res.json({ reply });
     } catch (error: any) {
