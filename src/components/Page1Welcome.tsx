@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { WORKSHOP_STAGES } from '../workshopStages';
 
 interface Page1WelcomeProps {
   onStart: () => void;
@@ -39,21 +40,21 @@ export const Page1Welcome: React.FC<Page1WelcomeProps> = ({ onStart }) => {
         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
       </button>
 
-      {/* Subtle Step Journey */}
-      <div className="mt-16 pt-8 border-t border-slate-200 w-full max-w-md">
+      {/* Three-stage research framework */}
+      <div className="mt-14 pt-8 border-t border-slate-200 w-full max-w-2xl">
         <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400 block mb-3">
           Workshop Journey
         </span>
-        <div className="flex items-center justify-between text-xs font-medium text-slate-500">
-          <span className="text-indigo-600 font-bold">Think</span>
-          <span className="text-slate-300">→</span>
-          <span>Explore</span>
-          <span className="text-slate-300">→</span>
-          <span>Review</span>
-          <span className="text-slate-300">→</span>
-          <span>Challenge</span>
-          <span className="text-slate-300">→</span>
-          <span>Decide</span>
+        <div className="grid sm:grid-cols-[1fr_auto_1fr_auto_1fr] items-stretch gap-3 text-left">
+          {WORKSHOP_STAGES.map((stage, index) => (
+            <React.Fragment key={stage.id}>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <span className="text-xs text-indigo-600 font-black uppercase tracking-wider">{stage.label}</span>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{stage.purpose}</p>
+              </div>
+              {index < WORKSHOP_STAGES.length - 1 && <span className="self-center text-slate-300 text-lg text-center">→</span>}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>
