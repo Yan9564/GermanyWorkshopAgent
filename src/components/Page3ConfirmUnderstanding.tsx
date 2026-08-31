@@ -120,7 +120,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
           Here's what I understood
         </h1>
         <p className="text-sm text-slate-500">
-          Review what was extracted. Edit any item or confirm to generate strategic opportunities.
+          Review what was extracted. Edit any item or confirm to generate context-informed strategic opportunities.
         </p>
       </div>
 

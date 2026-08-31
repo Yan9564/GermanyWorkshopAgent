@@ -187,6 +187,17 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                       </p>
                     </div>
 
+                    {(opp.relevantStakeholders || opp.keyAssumption) && (
+                      <div>
+                        <span className="font-bold text-slate-900 block mb-0.5">
+                          Stakeholders &amp; Key Assumption:
+                        </span>
+                        <p className="text-slate-600">
+                          {opp.relevantStakeholders || 'Confirm accountable stakeholders'} · {opp.keyAssumption || 'Validate the operating assumptions with participants'}
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
                         Implementation &amp; AI Approach:
@@ -208,7 +219,7 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                         Expected Value, Output &amp; Assumptions:
                       </span>
                       <p className="text-slate-600">
-                        {opp.aiUseCase || opp.strategicOpportunity} Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>. Validate data access and adoption assumptions during review.
+                        {opp.potentialValue || opp.strategicOpportunity} Output: {opp.aiUseCase}. Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>. Validate data access and adoption assumptions during review.
                       </p>
                     </div>
                   </div>

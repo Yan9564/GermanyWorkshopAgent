@@ -87,7 +87,7 @@ export const Page2TeamThinking: React.FC<Page2TeamThinkingProps> = ({
           What are the most important challenges your organisation needs to address?
         </h1>
         <p className="text-sm text-slate-500">
-          Add your team's discussion as text or upload a photo of your board.
+          Add your team's discussion as text or upload a photo of your board. Workshop Context will support interpretation without replacing what participants provide.
         </p>
       </div>
 

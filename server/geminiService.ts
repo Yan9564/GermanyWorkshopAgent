@@ -12,7 +12,9 @@ import {
   BoardChallengeOutput,
   HumanDiscussionData,
   HumanOpportunityReview,
+  ReviewDecision,
   UploadedWhiteboard,
+  WorkshopContext,
 } from '../src/types';
 
 // Lazy initialization of Gemini client
@@ -55,12 +57,36 @@ function parseCleanJson<T>(rawText: string, fallback: T): T {
   }
 }
 
+/** Format only supplied context values so optional/legacy requests stay clean. */
+export function formatWorkshopContext(context?: Partial<WorkshopContext>): string {
+  if (!context) return '';
+  const fields: [string, unknown][] = [
+    ['Organization', context.organization],
+    ['Industry / Sector', context.industry],
+    ['Business Unit / Function', context.businessUnit],
+    ['Workshop Topic', context.workshopTopic || context.title],
+    ['Workshop Objective', context.workshopObjective || context.objective],
+    ['Process / Workflow in Scope', context.processScope],
+    ['Key Stakeholders / Users', context.stakeholders],
+    ['Current Challenges / Pain Points', context.currentChallenges],
+    ['Strategic Priorities', context.strategicPriorities],
+    ['Constraints', context.constraints],
+    ['Additional Context', context.additionalContext],
+  ];
+  const populated = fields.filter(([, value]) => typeof value === 'string' && value.trim());
+  if (populated.length === 0) return '';
+  return `WORKSHOP CONTEXT (supporting background; do not treat as verified fact)\n${populated
+    .map(([label, value]) => `${label}: ${(value as string).trim()}`)
+    .join('\n')}`;
+}
+
 /**
  * Extract structured information from a whiteboard / flipchart image (SEARCH — Identify Challenges)
  */
 export async function extractWhiteboardImage(
   imageDataUrl: string,
-  userNotesHint?: string
+  userNotesHint?: string,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<ImageExtractionResult> {
   const ai = getGenAI();
 
@@ -103,8 +129,11 @@ export async function extractWhiteboardImage(
       }
     }
 
-    const prompt = `You are an expert executive workshop facilitator specializing in supply chain resilience and strategic service continuity.
+    const formattedContext = formatWorkshopContext(workshopContext);
+    const prompt = `You are an expert executive workshop facilitator specializing in executive strategy workshops.
 You are inspecting an uploaded photo of an executive workshop whiteboard, flipchart, sticky note wall, or handwritten notes from the SEARCH stage of a strategy workshop.
+
+${formattedContext ? `${formattedContext}\n\nUse this context only to disambiguate visible content. The image and participant notes remain the primary evidence. Never add a challenge merely because it seems plausible from the context, and do not invent facts not provided.\n` : ''}
 
 Task:
 1. Carefully read all legible text, diagrams, bullet points, and sticky notes.
@@ -162,7 +191,8 @@ Respond with strict JSON matching this schema:
  */
 export async function generateAIOpportunities(
   humanDiscussion: HumanDiscussionData,
-  contextTitle: string
+  contextTitle: string,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<AIExplorationOutput> {
   const ai = getGenAI();
 
@@ -339,7 +369,10 @@ export async function generateAIOpportunities(
   }
 
   try {
-    const prompt = `You are a world-class executive strategy advisor facilitating a high-stakes executive workshop on "Service Continuity and Resilient Supply Chains".
+    const formattedContext = formatWorkshopContext(workshopContext);
+    const prompt = `You are a world-class executive strategy advisor facilitating a high-stakes executive workshop on "${contextTitle}".
+
+${formattedContext ? `${formattedContext}\n\nUse the workshop context to improve relevance, but do not invent company-specific facts. Generate opportunities relevant to the stated organization, process, stakeholders, strategic priorities, and constraints.\n` : ''}
 
 The executive group has completed SEARCH (Prepare Context and Identify Challenges) and provided their confirmed challenges and initial AI ideas:
 
@@ -371,6 +404,9 @@ STAGE 3 TASK:
      * executionApproach (brief 1-2 sentence rollout path)
      * requiredProprietaryData
      * relevantPublicData
+     * relevantStakeholders (roles affected by or accountable for the use case)
+     * keyAssumption (the most important assumption to validate)
+     * potentialValue (the expected organizational or process value)
      * cost: "$" (low), "$$" (medium), or "$$$" (high)
      * timeline: "<5 days", "<5 weeks", or "<5 months"
      * priorityTier: "High", "Medium", or "Low"
@@ -400,6 +436,9 @@ Return strict JSON matching this structure:
       "executionApproach": "string",
       "requiredProprietaryData": "string",
       "relevantPublicData": "string",
+      "relevantStakeholders": "string",
+      "keyAssumption": "string",
+      "potentialValue": "string",
       "cost": "$$",
       "timeline": "<5 weeks",
       "priorityTier": "High",
@@ -442,7 +481,8 @@ Return strict JSON matching this structure:
  */
 export async function extractWhiteboardFeedbackImage(
   imageDataUrl: string,
-  currentOpportunities: AIExplorationOutput
+  currentOpportunities: AIExplorationOutput,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<WhiteboardFeedbackExtraction> {
   const ai = getGenAI();
 
@@ -493,7 +533,9 @@ export async function extractWhiteboardFeedbackImage(
       .map(o => `[${o.number}] ${o.name} (Tier: ${o.priorityTier}, Cost: ${o.cost}, Time: ${o.timeline})`)
       .join('\n');
 
-    const prompt = `You are an executive workshop facilitator interpreting a AGGREGATION Review Feedback Whiteboard / Sticky-Note photo.
+    const formattedContext = formatWorkshopContext(workshopContext);
+    const prompt = `You are an executive workshop facilitator interpreting an AGGREGATION Review Feedback Whiteboard / Sticky-Note photo.
+${formattedContext ? `\n${formattedContext}\nUse context only to interpret the participants' visible feedback; do not add feedback that is not present in the image.\n` : ''}
 The executive team has been reviewing the following AI-generated strategic opportunities:
 ${oppsSummary}
 
@@ -554,8 +596,9 @@ Return strict JSON:
  */
 export async function synthesizeRevisedPriorities(
   originalExploration: AIExplorationOutput,
-  humanReviews: Record<string, HumanOpportunityReview>,
-  whiteboardFeedback?: WhiteboardFeedbackExtraction
+  humanReviews: Record<string, HumanOpportunityReview | ReviewDecision>,
+  whiteboardFeedback?: WhiteboardFeedbackExtraction,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<RevisedPrioritiesOutput> {
   const ai = getGenAI();
 
@@ -599,7 +642,9 @@ export async function synthesizeRevisedPriorities(
     const reviewsSummary = Object.entries(humanReviews)
       .map(([id, r]) => {
         const opp = originalExploration.opportunities.find(o => o.id === id);
-        return `- [${r.decision}] ${opp?.name || id}: "${r.comment || 'No comment'}"`;
+        const decision = typeof r === 'string' ? r : r.decision;
+        const comment = typeof r === 'string' ? '' : r.comment;
+        return `- [${decision}] ${opp?.name || id}: "${comment || 'No comment'}"`;
       })
       .join('\n');
 
@@ -614,7 +659,10 @@ WHITEBOARD FEEDBACK:
 - Additional Context: ${whiteboardFeedback.additionalContext.join('; ')}`
       : 'No whiteboard feedback uploaded.';
 
+    const formattedContext = formatWorkshopContext(workshopContext);
     const prompt = `You are a strategic facilitator synthesizing executive revisions to AI opportunities.
+
+${formattedContext ? `${formattedContext}\nUse the context to assess alignment and feasibility, but do not invent organization-specific facts or override explicit human feedback.\n` : ''}
 
 ORIGINAL AI TOP 3:
 ${originalExploration.top3Priorities.map(p => `${p.rank}. ${p.name}: ${p.rationale}`).join('\n')}
@@ -679,7 +727,8 @@ Return strict JSON matching this schema:
  */
 export async function runBoardChallenge(
   revisedPriorities: RevisedPrioritiesOutput,
-  contextTitle: string
+  contextTitle: string,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<BoardChallengeOutput> {
   const ai = getGenAI();
 
@@ -749,8 +798,10 @@ export async function runBoardChallenge(
       .map(p => `Priority ${p.rank}: ${p.revisedStrategicFocus}\nOriginal Base: ${p.originalName}\nTeam Rationale: ${p.justification}`)
       .join('\n\n');
 
-    const prompt = `You are the Lead Independent Director on the Board Risk & Strategy Committee of a Fortune 500 enterprise.
-You are conducting a formal Board Challenge on the executive management team's 3 proposed strategic priorities for Service Continuity and Supply Chain Resilience:
+    const formattedContext = formatWorkshopContext(workshopContext);
+    const prompt = `You are the Lead Independent Director conducting a formal Board Challenge on the executive management team's 3 proposed strategic priorities for ${contextTitle}.
+
+${formattedContext ? `${formattedContext}\nEvaluate the priorities in light of the supplied constraints, stakeholders, process realities, and strategic priorities. Treat context as participant-provided background, not verified fact, and do not invent company-specific details.\n` : ''}
 
 THE 3 ESTABLISHED PRIORITIES:
 ${prioritiesList}
@@ -817,7 +868,8 @@ export async function getFacilitatorStageResponse(
   stage: number | 'search' | 'representation' | 'aggregation',
   userMessage: string,
   sessionState: Record<string, any>,
-  substep?: string
+  substep?: string,
+  workshopContext?: Partial<WorkshopContext>
 ): Promise<string> {
   // Translate legacy page numbers at the API boundary; prompts use semantic stages only.
   const mainStage = typeof stage === 'number'
@@ -849,9 +901,12 @@ export async function getFacilitatorStageResponse(
   }
 
   try {
+    const formattedContext = formatWorkshopContext(workshopContext || sessionState.context);
     const prompt = `You are the digital facilitator for Strategy Unbounded (executive strategy workshop).
 Current main stage: ${mainStage.toUpperCase()}${substep ? ` (${substep})` : ''}.
 Current user message: "${userMessage}"
+
+${formattedContext ? `${formattedContext}\nUse this context to provide stage-appropriate guidance without repeating it unnecessarily. Never present generic recommendations or unverified context as company-specific fact.\n` : ''}
 
 STRICT FACILITATOR GUARDRAILS:
 - SEARCH: Help participants explore broadly, articulate context and problems, and generate alternatives. Do not converge or provide final recommendations.

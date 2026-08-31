@@ -38,11 +38,11 @@ async function startServer() {
   // SEARCH / Identify Challenges: extract structured text from a whiteboard photo
   app.post('/api/workshop/extract-whiteboard', async (req, res) => {
     try {
-      const { imageDataUrl, userNotesHint } = req.body;
+      const { imageDataUrl, userNotesHint, workshopContext } = req.body;
       if (!imageDataUrl) {
         return res.status(400).json({ error: 'Missing imageDataUrl' });
       }
-      const extraction = await extractWhiteboardImage(imageDataUrl, userNotesHint);
+      const extraction = await extractWhiteboardImage(imageDataUrl, userNotesHint, workshopContext);
       res.json(extraction);
     } catch (error: any) {
       console.error('[API] /extract-whiteboard error:', error);
@@ -53,11 +53,11 @@ async function startServer() {
   // SEARCH / Explore AI Opportunities based on confirmed human challenges
   app.post('/api/workshop/explore-opportunities', async (req, res) => {
     try {
-      const { humanDiscussion, contextTitle } = req.body;
+      const { humanDiscussion, contextTitle, workshopContext } = req.body;
       if (!humanDiscussion) {
         return res.status(400).json({ error: 'Missing humanDiscussion data' });
       }
-      const output = await generateAIOpportunities(humanDiscussion, contextTitle || 'Service Continuity');
+      const output = await generateAIOpportunities(humanDiscussion, contextTitle || 'Service Continuity', workshopContext);
       res.json(output);
     } catch (error: any) {
       console.error('[API] /explore-opportunities error:', error);
@@ -68,11 +68,11 @@ async function startServer() {
   // AGGREGATION / Review: extract whiteboard feedback from critique photo
   app.post('/api/workshop/extract-whiteboard-feedback', async (req, res) => {
     try {
-      const { imageDataUrl, currentOpportunities } = req.body;
+      const { imageDataUrl, currentOpportunities, workshopContext } = req.body;
       if (!imageDataUrl) {
         return res.status(400).json({ error: 'Missing imageDataUrl' });
       }
-      const feedback = await extractWhiteboardFeedbackImage(imageDataUrl, currentOpportunities);
+      const feedback = await extractWhiteboardFeedbackImage(imageDataUrl, currentOpportunities, workshopContext);
       res.json(feedback);
     } catch (error: any) {
       console.error('[API] /extract-whiteboard-feedback error:', error);
@@ -83,14 +83,15 @@ async function startServer() {
   // AGGREGATION / Review: synthesize priorities from Keep/Challenge/Discard feedback
   app.post('/api/workshop/synthesize-revised-priorities', async (req, res) => {
     try {
-      const { originalExploration, humanReviews, whiteboardFeedback } = req.body;
+      const { originalExploration, humanReviews, whiteboardFeedback, workshopContext } = req.body;
       if (!originalExploration) {
         return res.status(400).json({ error: 'Missing originalExploration data' });
       }
       const revised = await synthesizeRevisedPriorities(
         originalExploration,
         humanReviews || {},
-        whiteboardFeedback
+        whiteboardFeedback,
+        workshopContext
       );
       res.json(revised);
     } catch (error: any) {
@@ -102,13 +103,14 @@ async function startServer() {
   // AGGREGATION / Stress Test: Board Challenge. Keep both route names for compatibility.
   const boardChallengeHandler = async (req: express.Request, res: express.Response) => {
     try {
-      const { revisedPriorities, contextTitle } = req.body;
+      const { revisedPriorities, contextTitle, workshopContext } = req.body;
       if (!revisedPriorities) {
         return res.status(400).json({ error: 'Missing revisedPriorities data' });
       }
       const challengeOutput = await runBoardChallenge(
         revisedPriorities,
-        contextTitle || 'Service Continuity'
+        contextTitle || 'Service Continuity',
+        workshopContext
       );
       res.json(challengeOutput);
     } catch (error: any) {
@@ -122,12 +124,13 @@ async function startServer() {
   // Facilitator Stage-Aware Assistant
   app.post('/api/workshop/facilitator-chat', async (req, res) => {
     try {
-      const { stage, mainStage, substep, message, sessionState } = req.body;
+      const { stage, mainStage, substep, message, sessionState, workshopContext } = req.body;
       const reply = await getFacilitatorStageResponse(
         mainStage || Number(stage) || 'search',
         message || '',
         sessionState || {},
-        substep
+        substep,
+        workshopContext || sessionState?.context
       );
       res.json({ reply });
     } catch (error: any) {

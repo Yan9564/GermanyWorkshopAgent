@@ -13,6 +13,17 @@ export interface WorkshopContext {
   background: string;
   coreQuestion: string;
   objective: string;
+  organization?: string;
+  industry?: string;
+  businessUnit?: string;
+  workshopTopic?: string;
+  workshopObjective?: string;
+  processScope?: string;
+  stakeholders?: string;
+  currentChallenges?: string;
+  strategicPriorities?: string;
+  constraints?: string;
+  additionalContext?: string;
 }
 
 export interface UploadedWhiteboard {
@@ -60,6 +71,9 @@ export interface AIOpportunity {
   executionApproach: string;
   requiredProprietaryData: string;
   relevantPublicData: string;
+  relevantStakeholders?: string;
+  keyAssumption?: string;
+  potentialValue?: string;
   cost: CostTier;
   timeline: TimelineTier;
   priorityTier: PriorityLevel;

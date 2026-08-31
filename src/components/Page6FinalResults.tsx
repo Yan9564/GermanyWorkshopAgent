@@ -187,6 +187,13 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
         bold: true,
       });
 
+      s1.addText(
+        [context.organization, context.workshopTopic || context.title, context.processScope]
+          .filter(Boolean)
+          .join('  |  '),
+        { x: 0.6, y: 1.08, w: 11.8, h: 0.2, fontSize: 8, color: '64748B' }
+      );
+
       // Table Header & Rows
       const tableData = [
         [
@@ -487,6 +494,11 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
                 {context.title} — AI Strategic Opportunity Portfolio
               </h2>
+              {(context.organization || context.processScope) && (
+                <p className="text-[9px] text-slate-500 mt-0.5">
+                  {[context.organization, context.processScope].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
 
             <div className="text-right">

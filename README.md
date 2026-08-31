@@ -18,7 +18,7 @@ The active interface presents three main stages. Focused pages within those stag
 
 Current sub-steps:
 
-- **1A — Prepare Context:** The session starts from the configured workshop context. The current UI uses the default service-continuity and resilient-supply-chain context; editing this context in the active journey is not yet implemented.
+- **1A — Prepare Context:** Participants can enter or edit structured organization, industry, function, topic, objective, process, stakeholder, priority, constraint, and pain-point fields, plus free-text additional context. Context persists with the session and is shown in a compact, editable summary later.
 - **1B — Identify Challenges:** Participants enter notes, upload a whiteboard/sticky-note image, or load a sample image. Gemini can interpret an uploaded image and extract challenges, initial AI ideas, uncertainties, and a summary.
 - **1C — Explore AI Opportunities:** Participants add, edit, or delete extracted challenges and initial ideas before confirming them. Gemini then produces a structured challenge assessment, an opportunity portfolio, and proposed priorities.
 
@@ -45,6 +45,7 @@ Stage labels and the compatibility mapping from the existing numeric pages are c
 ## Key Features
 
 - Three-stage, AI-guided workshop journey with stage and sub-step progress indicators.
+- Editable structured and free-text Workshop Context shared with downstream AI calls.
 - Text-based workshop-note capture.
 - Drag-and-drop whiteboard, flipchart, and sticky-note image upload.
 - Multimodal Gemini interpretation of uploaded images.
@@ -131,7 +132,7 @@ Google Gemini API (`gemini-3.7-flash`)
 
 ## Main Backend APIs
 
-All request bodies are JSON. Whiteboard images are sent as data URLs, and the Express body limit is 50 MB.
+All request bodies are JSON. Whiteboard images are sent as data URLs, and the Express body limit is 50 MB. Workshop endpoints accept an optional `workshopContext` object so older clients remain compatible.
 
 | Method and endpoint | Purpose |
 | --- | --- |
@@ -275,7 +276,6 @@ The application is designed to support—not automate—executive judgement.
 
 - **Browser-only persistence:** Sessions are stored in one browser's `localStorage`; there is no database, account synchronization, or server-side session recovery.
 - **No authentication or authorization:** API routes and the frontend do not implement user accounts or access controls.
-- **Fixed active context:** The default service-continuity/supply-chain context is present in session state, but the active simplified UI does not provide a context editor.
 - **Early-stage Representation:** Representation consists of expandable structured opportunity cards. It does not yet simulate use cases, models, workflows, or future operating scenarios.
 - **Partially connected functionality:** The facilitator assistant and review-whiteboard extraction are available as backend APIs, but are not mounted in the active simplified frontend journey.
 - **Priority editing is incomplete:** The stress-test page exposes an “Edit Priorities” state toggle, but it does not currently provide fields that modify the priority data.
@@ -290,7 +290,6 @@ The application is designed to support—not automate—executive judgement.
 The following are potential directions, not implemented features:
 
 - Richer Representation artifacts, prototypes, workflow simulations, or scenario comparisons.
-- An editable Prepare Context experience for different organizations and workshop questions.
 - Persistent server-side sessions, workshop recovery, and role-based access.
 - Connection of facilitator chat and review-whiteboard feedback to the active three-stage UI.
 - Complete priority editing after the Board Challenge.
