@@ -56,7 +56,7 @@ function parseCleanJson<T>(rawText: string, fallback: T): T {
 }
 
 /**
- * Extract structured information from a whiteboard / flipchart image (Stage 2)
+ * Extract structured information from a whiteboard / flipchart image (SEARCH — Identify Challenges)
  */
 export async function extractWhiteboardImage(
   imageDataUrl: string,
@@ -104,7 +104,7 @@ export async function extractWhiteboardImage(
     }
 
     const prompt = `You are an expert executive workshop facilitator specializing in supply chain resilience and strategic service continuity.
-You are inspecting an uploaded photo of an executive workshop whiteboard, flipchart, sticky note wall, or handwritten notes from Stage 2 of a strategy workshop.
+You are inspecting an uploaded photo of an executive workshop whiteboard, flipchart, sticky note wall, or handwritten notes from the SEARCH stage of a strategy workshop.
 
 Task:
 1. Carefully read all legible text, diagrams, bullet points, and sticky notes.
@@ -158,7 +158,7 @@ Respond with strict JSON matching this schema:
 }
 
 /**
- * Generate 8-10 distinct AI-enabled strategic opportunities (Stage 3)
+ * Generate 8-10 distinct AI-enabled strategic opportunities (SEARCH — Explore AI Opportunities)
  */
 export async function generateAIOpportunities(
   humanDiscussion: HumanDiscussionData,
@@ -341,7 +341,7 @@ export async function generateAIOpportunities(
   try {
     const prompt = `You are a world-class executive strategy advisor facilitating a high-stakes executive workshop on "Service Continuity and Resilient Supply Chains".
 
-The executive group has completed Stage 2 (Discuss as a Team) and provided their confirmed challenges and initial AI ideas:
+The executive group has completed SEARCH (Prepare Context and Identify Challenges) and provided their confirmed challenges and initial AI ideas:
 
 HUMAN-IDENTIFIED CHALLENGES:
 ${humanDiscussion.challenges.map((c, i) => `${i + 1}. ${c}`).join('\n')}
@@ -438,7 +438,7 @@ Return strict JSON matching this structure:
 }
 
 /**
- * Extract feedback from Stage 4 whiteboard photo
+ * Extract feedback from an AGGREGATION review whiteboard photo
  */
 export async function extractWhiteboardFeedbackImage(
   imageDataUrl: string,
@@ -493,7 +493,7 @@ export async function extractWhiteboardFeedbackImage(
       .map(o => `[${o.number}] ${o.name} (Tier: ${o.priorityTier}, Cost: ${o.cost}, Time: ${o.timeline})`)
       .join('\n');
 
-    const prompt = `You are an executive workshop facilitator interpreting a Stage 4 Feedback Whiteboard / Sticky-Note photo.
+    const prompt = `You are an executive workshop facilitator interpreting a AGGREGATION Review Feedback Whiteboard / Sticky-Note photo.
 The executive team has been reviewing the following AI-generated strategic opportunities:
 ${oppsSummary}
 
@@ -550,7 +550,7 @@ Return strict JSON:
 }
 
 /**
- * Synthesize revised priorities based on human Keep/Challenge/Discard reviews & whiteboard feedback (Stage 4)
+ * Synthesize revised priorities based on human Keep/Challenge/Discard reviews & whiteboard feedback (AGGREGATION — Review & Prioritize)
  */
 export async function synthesizeRevisedPriorities(
   originalExploration: AIExplorationOutput,
@@ -674,7 +674,7 @@ Return strict JSON matching this schema:
 }
 
 /**
- * Board Challenge Mode (Stage 5)
+ * Board Challenge Mode (AGGREGATION — Stress Test)
  * Stress-tests the 3 revised priorities with Fortune 500 Board critical scrutiny
  */
 export async function runBoardChallenge(
@@ -814,12 +814,18 @@ Return strict JSON:
  * Stage-Aware Facilitator Guidance & Guardrail Assistant
  */
 export async function getFacilitatorStageResponse(
-  stage: number,
+  stage: number | 'search' | 'representation' | 'aggregation',
   userMessage: string,
-  sessionState: Record<string, any>
+  sessionState: Record<string, any>,
+  substep?: string
 ): Promise<string> {
-  // Hard guardrail for Stage 2
-  if (stage === 2) {
+  // Translate legacy page numbers at the API boundary; prompts use semantic stages only.
+  const mainStage = typeof stage === 'number'
+    ? stage <= 3 ? 'search' : stage === 4 ? 'representation' : 'aggregation'
+    : stage;
+
+  // SEARCH must broaden and articulate the problem rather than prematurely converge.
+  if (mainStage === 'search') {
     const lower = userMessage.toLowerCase();
     if (
       lower.includes('what should i') ||
@@ -830,33 +836,28 @@ export async function getFacilitatorStageResponse(
       lower.includes('suggest') ||
       lower.includes('answer')
     ) {
-      return 'This stage is intended to capture your group’s own thinking before AI analysis. Please record your current view first. In Stage 3, I will provide comprehensive AI exploration and strategic opportunities.';
+      return 'Search is for broadening the strategic space and articulating the problem before convergence. Please capture the group’s challenges and context first; I can then help explore alternatives without jumping to final recommendations.';
     }
   }
 
   const ai = getGenAI();
   if (!ai) {
-    if (stage === 1) return 'Stage 1 establishes our shared case framing. Ensure all team members understand the service continuity challenge, then click Continue to capture your initial view.';
-    if (stage === 2) return 'Please record 3-5 priority challenges and any initial AI ideas your team discussed, or upload a photo of your whiteboard/sticky notes.';
-    if (stage === 3) return 'Review the 8-10 strategic AI opportunities and top 3 priorities generated from your challenges. When ready, proceed to Stage 4 to review and refine them.';
-    if (stage === 4) return 'Mark each opportunity Keep, Challenge, or Discard, or upload physical whiteboard feedback to synthesize revised priorities.';
-    if (stage === 5) return 'Review the Board Challenge stress-tests and risk gap analyses for your 3 priorities before making your final executive decision in Stage 6.';
-    if (stage === 6) return 'Make your final strategic decisions, apply needed governance safeguards, and generate the final Executive Strategy Brief.';
+    if (mainStage === 'search') return 'Broaden the search space: clarify the context and challenges, then generate alternatives without converging prematurely.';
+    if (mainStage === 'representation') return 'Make each opportunity concrete by examining what it does, its data, AI approach, outputs, feasibility, value, and assumptions.';
+    if (mainStage === 'aggregation') return 'Critique and compare the represented opportunities, prioritize them, stress-test assumptions, and make the final human decision.';
     return 'I am here to facilitate your executive strategy workshop. Follow the step-by-step guidance for this stage.';
   }
 
   try {
     const prompt = `You are the digital facilitator for Strategy Unbounded (executive strategy workshop).
-Current stage: Stage ${stage} of 6.
+Current main stage: ${mainStage.toUpperCase()}${substep ? ` (${substep})` : ''}.
 Current user message: "${userMessage}"
 
 STRICT FACILITATOR GUARDRAILS:
-- In Stage 1: Introduce case framing, explain roles, do NOT suggest AI solutions or risk lists.
-- In Stage 2: Capture human thinking only. If asked for answers, remind them: "This stage is intended to capture your group’s own thinking before AI analysis. Please record your current view first."
-- In Stage 3: Help explain the AI opportunity cards, data requirements, and prioritization.
-- In Stage 4: Guide Keep/Challenge/Discard reviews and whiteboard feedback synthesis.
-- In Stage 5: Explain Board Challenge stress-test findings without softening the critique.
-- In Stage 6: Support final human decision-making and executive documentation.
+- SEARCH: Help participants explore broadly, articulate context and problems, and generate alternatives. Do not converge or provide final recommendations.
+- REPRESENTATION: Clarify what an opportunity does, required data, AI/model mechanism, implementation concept, outputs, feasibility, value, and assumptions.
+- AGGREGATION: Guide Keep/Challenge/Discard review, comparison, prioritization, Board Challenge stress-testing, final human decisions, and reporting.
+- Never cross a stage boundary or substitute AI judgement for the participants' final decision.
 
 Keep response concise (1-3 sentences), professional, executive, and strictly adhere to stage boundaries.`;
 
