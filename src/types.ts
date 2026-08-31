@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { MainStage } from './workshopStages';
+
 export type WorkshopStageId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface WorkshopContext {
@@ -194,6 +196,8 @@ export interface ChatMessage {
 export interface WorkshopSessionState {
   id?: string;
   currentStage: WorkshopStageId;
+  /** Semantic stage used by new integrations; currentStage remains for saved-session compatibility. */
+  mainStage?: MainStage;
   context: WorkshopContext;
   humanDiscussion: HumanDiscussionData;
   exploration?: AIExplorationOutput | null;

@@ -81,7 +81,7 @@ export const Page2TeamThinking: React.FC<Page2TeamThinkingProps> = ({
       {/* Header Task */}
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 font-mono block mb-2">
-          Step 1 of 5 • Your Team's Thinking
+          Search • Sub-step 1B — Identify Challenges
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
           What are the most important challenges your organisation needs to address?

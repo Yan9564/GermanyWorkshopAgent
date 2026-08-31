@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Sparkles, RotateCcw, Compass, ArrowLeft } from 'lucide-react';
+import { WORKSHOP_STAGES, getMainStageForStep, getStageEntryStep, getSubstepForStep } from '../workshopStages';
 
 interface HeaderProps {
   currentStage: number;
@@ -13,14 +14,6 @@ interface HeaderProps {
   onLoadDemo?: () => void;
 }
 
-const STEPS = [
-  { id: 2, label: 'Think', short: 'Think' },
-  { id: 3, label: 'Verify', short: 'Verify' },
-  { id: 4, label: 'Explore', short: 'Explore' },
-  { id: 5, label: 'Challenge', short: 'Challenge' },
-  { id: 6, label: 'Results', short: 'Results' },
-];
-
 export const Header: React.FC<HeaderProps> = ({
   currentStage,
   onSelectStage,
@@ -28,6 +21,9 @@ export const Header: React.FC<HeaderProps> = ({
   onLoadDemo,
 }) => {
   if (currentStage === 1) return null; // Welcome page has its own minimal layout
+  const activeMainStage = getMainStageForStep(currentStage);
+  const activeStageIndex = WORKSHOP_STAGES.findIndex((stage) => stage.id === activeMainStage);
+  const substep = getSubstepForStep(currentStage);
 
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
@@ -52,17 +48,18 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Step Indicator (Think → Explore → Review → Challenge → Decide) */}
-        <div className="hidden md:flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200">
-          {STEPS.map((step, idx) => {
-            const isActive = currentStage === step.id;
-            const isPassed = currentStage > step.id;
+        {/* Three-stage framework; legacy pages are shown only as secondary sub-steps. */}
+        <div className="hidden md:flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200">
+          {WORKSHOP_STAGES.map((stage, idx) => {
+            const isActive = activeMainStage === stage.id;
+            const isPassed = idx < activeStageIndex;
 
             return (
               <button
-                key={step.id}
+                key={stage.id}
                 onClick={() => {
-                  if (isPassed || isActive) onSelectStage(step.id);
+                  if (isPassed || isActive) onSelectStage(getStageEntryStep(stage.id));
                 }}
                 disabled={!isPassed && !isActive}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
@@ -84,10 +81,14 @@ export const Header: React.FC<HeaderProps> = ({
                 >
                   {idx + 1}
                 </span>
-                <span>{step.label}</span>
+                <span className="uppercase tracking-wide">{stage.label}</span>
               </button>
             );
           })}
+          </div>
+          <span className="text-[10px] font-semibold text-slate-500">
+            {substep.code} · {substep.label}
+          </span>
         </div>
 
         {/* Quick Actions */}

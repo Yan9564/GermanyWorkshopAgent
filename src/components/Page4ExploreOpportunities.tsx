@@ -58,13 +58,13 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
       {/* Header Task */}
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 font-mono block mb-2">
-          Step 3 of 5 • Strategic Opportunities
+          Representation • Sub-step 2A — Examine Opportunities
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
           AI found {opportunities.length} strategic opportunities
         </h1>
         <p className="text-sm text-slate-500">
-          Which opportunities make sense to your group? Proposed Top 3 are highlighted below.
+          Make each use case concrete: examine its data, AI approach, implementation, outputs, value, and assumptions before reviewing it.
         </p>
       </div>
 
@@ -189,14 +189,14 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
 
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Execution Approach:
+                        Implementation &amp; AI Approach:
                       </span>
                       <p className="text-slate-600">{opp.executionApproach}</p>
                     </div>
 
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Data Dependencies:
+                        Required Data:
                       </span>
                       <p className="text-slate-600">
                         Proprietary: {opp.requiredProprietaryData} | Public: {opp.relevantPublicData}
@@ -205,10 +205,10 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
 
                     <div>
                       <span className="font-bold text-slate-900 block mb-0.5">
-                        Cost & Timeline:
+                        Expected Value, Output &amp; Assumptions:
                       </span>
                       <p className="text-slate-600">
-                        Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>
+                        {opp.aiUseCase || opp.strategicOpportunity} Estimated Cost: <strong className="text-slate-900">{opp.cost}</strong> | Pilot Timeline: <strong className="text-slate-900">{opp.timeline}</strong>. Validate data access and adoption assumptions during review.
                       </p>
                     </div>
                   </div>
@@ -234,7 +234,7 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
             </>
           ) : (
             <>
-              <span>Confirm Top 3</span>
+              <span>Continue to Aggregation</span>
               <ArrowRight className="w-4 h-4" />
             </>
           )}

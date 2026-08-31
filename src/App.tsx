@@ -29,10 +29,12 @@ import {
   SAMPLE_BOARD_CHALLENGE,
   SAMPLE_WHITEBOARD_DATA,
 } from './data/defaultData';
+import { getMainStageForStep } from './workshopStages';
 
 const INITIAL_SESSION: WorkshopSessionState = {
   id: `session-${Date.now()}`,
   currentStage: 1, // 1 to 6
+  mainStage: 'search',
   context: DEFAULT_WORKSHOP_CONTEXT,
   humanDiscussion: {
     challenges: [],
@@ -61,6 +63,7 @@ export default function App() {
         const parsed = JSON.parse(saved);
         // Normalize stage to 1..6
         if (parsed.currentStage === 0 || !parsed.currentStage) parsed.currentStage = 1;
+        parsed.mainStage = getMainStageForStep(parsed.currentStage);
         return parsed;
       } catch (e) {
         console.error('Failed to parse saved session:', e);
@@ -81,6 +84,7 @@ export default function App() {
     setSession((prev) => ({
       ...prev,
       currentStage: stage as any,
+      mainStage: getMainStageForStep(stage),
       updatedAt: Date.now(),
     }));
   };
@@ -91,6 +95,7 @@ export default function App() {
       ...INITIAL_SESSION,
       id: `session-${Date.now()}`,
       currentStage: 1,
+      mainStage: 'search',
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -103,6 +108,7 @@ export default function App() {
     const demoSession: WorkshopSessionState = {
       id: `demo-session-${Date.now()}`,
       currentStage: 4,
+      mainStage: 'representation',
       context: DEFAULT_WORKSHOP_CONTEXT,
       humanDiscussion: {
         challenges: SAMPLE_WHITEBOARD_DATA.stage2.challenges,
@@ -231,6 +237,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 3,
+        mainStage: 'search',
         humanDiscussion: {
           ...prev.humanDiscussion,
           challenges: extractedChallenges,
@@ -274,6 +281,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 4,
+        mainStage: 'representation',
         humanDiscussion: confirmedData,
         exploration: explorationResult,
         updatedAt: Date.now(),
@@ -326,6 +334,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 5,
+        mainStage: 'aggregation',
         humanReview: {
           ...prev.humanReview,
           reviews: reviewedDecisions,
@@ -360,6 +369,7 @@ export default function App() {
       setSession((prev) => ({
         ...prev,
         currentStage: 6,
+        mainStage: 'aggregation',
         finalDecision: {
           finalPriorities: [
             {
@@ -440,7 +450,7 @@ export default function App() {
         onLoadDemo={handleLoadDemoSession}
       />
 
-      {/* Main Stage Router: Exactly 6 Simple Pages */}
+      {/* Existing focused pages act as sub-steps within exactly three main stages. */}
       <main className="flex-1 flex flex-col">
         {currentStage === 1 && (
           <Page1Welcome onStart={() => setStage(2)} />
