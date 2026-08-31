@@ -114,13 +114,13 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
       {/* Header Task */}
       <div className="text-center mb-8">
         <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 font-mono block mb-2">
-          Step 2 of 5 • Verify AI Understanding
+          Search • Sub-step 1C — Explore AI Opportunities
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
           Here's what I understood
         </h1>
         <p className="text-sm text-slate-500">
-          Review what was extracted. Edit any item or confirm to generate strategic opportunities.
+          Review what was extracted. Edit any item or confirm to generate context-informed strategic opportunities.
         </p>
       </div>
 

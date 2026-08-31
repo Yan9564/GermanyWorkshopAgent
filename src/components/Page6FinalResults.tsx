@@ -187,6 +187,13 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
         bold: true,
       });
 
+      s1.addText(
+        [context.organization, context.workshopTopic || context.title, context.processScope]
+          .filter(Boolean)
+          .join('  |  '),
+        { x: 0.6, y: 1.08, w: 11.8, h: 0.2, fontSize: 8, color: '64748B' }
+      );
+
       // Table Header & Rows
       const tableData = [
         [
@@ -376,7 +383,7 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 font-mono block mb-1">
-            Step 5 of 5 • Final Executive Results
+            Aggregation • Sub-step 3C — Final Decision &amp; Report
           </span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif-title">
             Two-Page Executive Strategy Deck
@@ -487,6 +494,11 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
               <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight leading-tight">
                 {context.title} — AI Strategic Opportunity Portfolio
               </h2>
+              {(context.organization || context.processScope) && (
+                <p className="text-[9px] text-slate-500 mt-0.5">
+                  {[context.organization, context.processScope].filter(Boolean).join(' · ')}
+                </p>
+              )}
             </div>
 
             <div className="text-right">

@@ -22,6 +22,11 @@ export const DEFAULT_WORKSHOP_CONTEXT: WorkshopContext = {
     'How can AI help the organisation anticipate, respond to and recover from disruption while maintaining continuity of service?',
   objective:
     'The objective is NOT simply to identify AI technologies. The objective is to determine where AI could materially strengthen business resilience, service continuity, strategic response and decision quality.',
+  workshopTopic: 'Service Continuity and Resilient Supply Chains',
+  workshopObjective:
+    'Determine where AI could materially strengthen business resilience, service continuity, strategic response and decision quality.',
+  processScope: 'Cross-ecosystem disruption sensing, response and service recovery',
+  stakeholders: 'Executive committee, operations, procurement, logistics, technology and risk leaders',
 };
 
 export const SAMPLE_EXPLORATION_OUTPUT: AIExplorationOutput = {
@@ -558,4 +563,3 @@ export const SAMPLE_WHITEBOARD_DATA = {
     uncertainties: [],
   },
 };
-

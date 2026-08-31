@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { MainStage } from './workshopStages';
+
 export type WorkshopStageId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface WorkshopContext {
@@ -11,6 +13,17 @@ export interface WorkshopContext {
   background: string;
   coreQuestion: string;
   objective: string;
+  organization?: string;
+  industry?: string;
+  businessUnit?: string;
+  workshopTopic?: string;
+  workshopObjective?: string;
+  processScope?: string;
+  stakeholders?: string;
+  currentChallenges?: string;
+  strategicPriorities?: string;
+  constraints?: string;
+  additionalContext?: string;
 }
 
 export interface UploadedWhiteboard {
@@ -58,6 +71,9 @@ export interface AIOpportunity {
   executionApproach: string;
   requiredProprietaryData: string;
   relevantPublicData: string;
+  relevantStakeholders?: string;
+  keyAssumption?: string;
+  potentialValue?: string;
   cost: CostTier;
   timeline: TimelineTier;
   priorityTier: PriorityLevel;
@@ -194,6 +210,8 @@ export interface ChatMessage {
 export interface WorkshopSessionState {
   id?: string;
   currentStage: WorkshopStageId;
+  /** Semantic stage used by new integrations; currentStage remains for saved-session compatibility. */
+  mainStage?: MainStage;
   context: WorkshopContext;
   humanDiscussion: HumanDiscussionData;
   exploration?: AIExplorationOutput | null;
