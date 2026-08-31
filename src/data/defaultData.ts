@@ -268,6 +268,7 @@ export const SAMPLE_REVISED_PRIORITIES: RevisedPrioritiesOutput = {
     'Human executive review validated the critical importance of upstream supplier sensing while introducing decisive guardrails: rejecting autonomous spot contracting, mandating human spend thresholds ($50k), and merging deep BOM graph dependencies into the core radar platform.',
   revisedPriorities: [
     {
+      id: 'priority-opp-01',
       rank: 1,
       originalOpportunityId: 'opp-01',
       originalName: 'Multi-Tier Supplier Early-Warning Radar & Disruption Sensing',
@@ -280,6 +281,7 @@ export const SAMPLE_REVISED_PRIORITIES: RevisedPrioritiesOutput = {
       status: 'MODIFIED',
     },
     {
+      id: 'priority-opp-02',
       rank: 2,
       originalOpportunityId: 'opp-02',
       originalName: 'Dynamic Autonomous Freight Rerouting & Container ETA Predictor',
@@ -292,6 +294,7 @@ export const SAMPLE_REVISED_PRIORITIES: RevisedPrioritiesOutput = {
       status: 'MODIFIED',
     },
     {
+      id: 'priority-opp-03',
       rank: 3,
       originalOpportunityId: 'opp-04',
       originalName: 'Synthetic Crisis Simulator & Executive War-Gaming Playbooks',
@@ -503,6 +506,7 @@ export const INITIAL_WORKSHOP_STATE: WorkshopSessionState = {
   revisedPriorities: null,
   boardChallenge: null,
   finalDecision: null,
+  interactions: [],
   isLoading: false,
   loadingMessage: '',
   lastUpdated: Date.now(),

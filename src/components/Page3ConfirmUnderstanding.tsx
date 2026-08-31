@@ -14,15 +14,18 @@ import {
   UploadCloud,
   Edit2,
 } from 'lucide-react';
-import { HumanDiscussionData } from '../types';
+import { HumanDiscussionData, WorkshopChallenge, WorkshopInteractionInput } from '../types';
+import { createResearchId } from '../researchLog';
 
 interface Page3ConfirmUnderstandingProps {
-  initialChallenges: string[];
+  initialChallenges: WorkshopChallenge[];
   initialIdeas: string[];
   uncertainties?: string[];
   onConfirm: (confirmedData: HumanDiscussionData) => Promise<void>;
   onUploadAnother: () => void;
   isProcessing: boolean;
+  onChallengesChange: (challenges: WorkshopChallenge[]) => void;
+  onInteraction: (event: WorkshopInteractionInput) => void;
 }
 
 export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps> = ({
@@ -32,8 +35,10 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
   onConfirm,
   onUploadAnother,
   isProcessing,
+  onChallengesChange,
+  onInteraction,
 }) => {
-  const [challenges, setChallenges] = useState<string[]>(
+  const [challenges, setChallenges] = useState<WorkshopChallenge[]>(
     initialChallenges.length > 0
       ? initialChallenges
       : [
@@ -41,7 +46,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
           'Port transshipment congestion and cross-border customs delays (3-4 weeks)',
           'Lack of real-time inventory visibility across 3PL partner warehouses',
           'Cybersecurity vulnerabilities across legacy manufacturing equipment',
-        ]
+        ].map((text) => ({ id: createResearchId('challenge'), text, source: 'ai' as const, originalAIText: text }))
   );
 
   const [ideas, setIdeas] = useState<string[]>(
@@ -60,18 +65,41 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
   const [newIdeaText, setNewIdeaText] = useState('');
   const [isAddingChallenge, setIsAddingChallenge] = useState(false);
   const [isAddingIdea, setIsAddingIdea] = useState(false);
+  const [ideaIds, setIdeaIds] = useState(() => initialIdeas.map(() => createResearchId('idea')));
+
+  const commitChallenges = (next: WorkshopChallenge[]) => {
+    setChallenges(next);
+    onChallengesChange(next);
+  };
 
   const handleRemoveChallenge = (idx: number) => {
-    setChallenges(challenges.filter((_, i) => i !== idx));
+    const deleted = challenges[idx];
+    commitChallenges(challenges.filter((_, i) => i !== idx));
+    onInteraction({
+      stage: 'search', subStep: '1C', actionType: 'delete', entityType: 'challenge',
+      entityId: deleted.id, originalValue: deleted, metadata: { source: deleted.source },
+    });
   };
 
   const handleRemoveIdea = (idx: number) => {
+    onInteraction({
+      stage: 'search', subStep: '1C', actionType: 'delete', entityType: 'other',
+      entityId: ideaIds[idx], originalValue: ideas[idx], metadata: { kind: 'initial_ai_idea' },
+    });
     setIdeas(ideas.filter((_, i) => i !== idx));
+    setIdeaIds(ideaIds.filter((_, i) => i !== idx));
   };
 
   const handleAddChallenge = () => {
     if (newChallengeText.trim()) {
-      setChallenges([...challenges, newChallengeText.trim()]);
+      const added: WorkshopChallenge = {
+        id: createResearchId('challenge'), text: newChallengeText.trim(), source: 'human',
+      };
+      commitChallenges([...challenges, added]);
+      onInteraction({
+        stage: 'search', subStep: '1C', actionType: 'add', entityType: 'challenge',
+        entityId: added.id, newValue: added, metadata: { source: 'human' },
+      });
       setNewChallengeText('');
       setIsAddingChallenge(false);
     }
@@ -79,7 +107,13 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
 
   const handleAddIdea = () => {
     if (newIdeaText.trim()) {
+      const id = createResearchId('idea');
+      setIdeaIds([...ideaIds, id]);
       setIdeas([...ideas, newIdeaText.trim()]);
+      onInteraction({
+        stage: 'search', subStep: '1C', actionType: 'add', entityType: 'other',
+        entityId: id, newValue: newIdeaText.trim(), metadata: { kind: 'initial_ai_idea', source: 'human' },
+      });
       setNewIdeaText('');
       setIsAddingIdea(false);
     }
@@ -87,21 +121,43 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
 
   const handleSaveChallengeEdit = (idx: number, newText: string) => {
     const updated = [...challenges];
-    updated[idx] = newText;
-    setChallenges(updated);
+    const original = updated[idx];
+    const trimmed = newText.trim();
+    if (trimmed && trimmed !== original.text) {
+      updated[idx] = {
+        ...original,
+        text: trimmed,
+        source: original.source === 'ai' ? 'ai_edited_by_human' : original.source,
+        originalAIText: original.originalAIText || (original.source === 'ai' ? original.text : undefined),
+      };
+      commitChallenges(updated);
+      onInteraction({
+        stage: 'search', subStep: '1C', actionType: 'edit', entityType: 'challenge',
+        entityId: original.id, originalValue: original.text, newValue: trimmed,
+        metadata: { originalSource: original.source, currentSource: updated[idx].source },
+      });
+    }
     setEditingChallengeIndex(null);
   };
 
   const handleSaveIdeaEdit = (idx: number, newText: string) => {
     const updated = [...ideas];
-    updated[idx] = newText;
+    const original = updated[idx];
+    if (newText.trim() && newText.trim() !== original) {
+      updated[idx] = newText.trim();
+      onInteraction({
+        stage: 'search', subStep: '1C', actionType: 'edit', entityType: 'other',
+        entityId: ideaIds[idx], originalValue: original, newValue: newText.trim(),
+        metadata: { kind: 'initial_ai_idea' },
+      });
+    }
     setIdeas(updated);
     setEditingIdeaIndex(null);
   };
 
   const handleConfirm = async () => {
     await onConfirm({
-      challenges,
+      challenges: challenges.map((challenge) => challenge.text),
       initialAIIdeas: ideas,
       isConfirmed: true,
       uploadedImages: [],
@@ -161,7 +217,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
 
               return (
                 <div
-                  key={idx}
+                  key={item.id}
                   className="group p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 flex items-start justify-between gap-3 transition-all"
                 >
                   <div className="flex items-start gap-3 flex-1">
@@ -172,7 +228,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
                     {isEditing ? (
                       <input
                         type="text"
-                        defaultValue={item}
+                        defaultValue={item.text}
                         autoFocus
                         onBlur={(e) => handleSaveChallengeEdit(idx, e.target.value)}
                         onKeyDown={(e) => {
@@ -184,7 +240,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
                     ) : (
                       <div className="flex-1">
                         <span className="text-sm font-medium text-slate-800 leading-snug">
-                          {item}
+                          {item.text}
                         </span>
                         {isUncertain && (
                           <span className="ml-2 inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">

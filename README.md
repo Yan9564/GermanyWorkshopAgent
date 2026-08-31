@@ -54,6 +54,9 @@ Stage labels and the compatibility mapping from the existing numeric pages are c
 - Gemini-generated challenge assessment, AI opportunity portfolio, and proposed top priorities.
 - Expandable opportunity representations covering use case, data, implementation, value, cost, and timeline.
 - Keep / Challenge / Discard review controls.
+- Session-level research log for edits, additions, deletions, decisions, ranking changes, and participant feedback.
+- Stable entity IDs and AI/human provenance for challenges and opportunities.
+- Research-log export as JSON or CSV from the final report page.
 - Gemini-based revised-priority synthesis API.
 - Board Challenge / Devil's Advocate stress-testing.
 - Semantic stage-aware facilitator assistant API with a Search-stage guardrail against premature convergence.
@@ -275,6 +278,7 @@ The application is designed to support—not automate—executive judgement.
 ## Current Limitations
 
 - **Browser-only persistence:** Sessions are stored in one browser's `localStorage`; there is no database, account synchronization, or server-side session recovery.
+- **Local research log:** Interaction history is persisted with the browser session and can be exported, but is not uploaded to a research database or associated with participant identities.
 - **No authentication or authorization:** API routes and the frontend do not implement user accounts or access controls.
 - **Early-stage Representation:** Representation consists of expandable structured opportunity cards. It does not yet simulate use cases, models, workflows, or future operating scenarios.
 - **Partially connected functionality:** The facilitator assistant and review-whiteboard extraction are available as backend APIs, but are not mounted in the active simplified frontend journey.

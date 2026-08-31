@@ -21,11 +21,18 @@ import {
   DollarSign,
   ArrowRight,
   TrendingUp,
+  FileJson,
 } from 'lucide-react';
 import { WorkshopSessionState } from '../types';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import pptxgen from 'pptxgenjs';
+import {
+  buildResearchExport,
+  downloadResearchFile,
+  serializeResearchLogCsv,
+  serializeResearchLogJson,
+} from '../researchLog';
 
 interface Page6FinalResultsProps {
   session: WorkshopSessionState;
@@ -52,6 +59,24 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
   });
 
   const opportunities = exploration?.opportunities || [];
+
+  const handleExportResearchLog = (format: 'json' | 'csv') => {
+    const researchExport = buildResearchExport(session.id, context, session.interactions || []);
+    const safeSessionId = (session.id || 'unknown-session').replace(/[^a-zA-Z0-9_-]/g, '_');
+    if (format === 'json') {
+      downloadResearchFile(
+        `workshop-interaction-log-${safeSessionId}.json`,
+        serializeResearchLogJson(researchExport),
+        'application/json'
+      );
+      return;
+    }
+    downloadResearchFile(
+      `workshop-interaction-log-${safeSessionId}.csv`,
+      serializeResearchLogCsv(researchExport.interactions),
+      'text/csv'
+    );
+  };
 
   const top3Priorities = [
     {
@@ -421,6 +446,15 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
             <ImageIcon className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">PNG</span>
           </button>
+
+          <div className="flex items-center rounded-xl border border-slate-200 overflow-hidden" title="Research export contains workshop context and interaction events only">
+            <button onClick={() => handleExportResearchLog('json')} className="px-3 py-2.5 hover:bg-slate-50 text-slate-600 text-xs font-semibold flex items-center gap-1.5">
+              <FileJson className="w-3.5 h-3.5" /> Export Interaction Log
+            </button>
+            <button onClick={() => handleExportResearchLog('csv')} className="px-2.5 py-2.5 border-l border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-bold" aria-label="Export interaction log as CSV">
+              CSV
+            </button>
+          </div>
 
           <button
             onClick={onRestart}

@@ -23,6 +23,9 @@ import {
   RevisedPrioritiesOutput,
   ReviewDecision,
   WorkshopContext,
+  WorkshopChallenge,
+  WorkshopInteractionInput,
+  AIOpportunity,
 } from './types';
 
 import {
@@ -33,12 +36,14 @@ import {
   SAMPLE_WHITEBOARD_DATA,
 } from './data/defaultData';
 import { getMainStageForStep } from './workshopStages';
+import { createInteractionEvent, createResearchId } from './researchLog';
 
 const INITIAL_SESSION: WorkshopSessionState = {
   id: `session-${Date.now()}`,
   currentStage: 1, // 1 to 6
   mainStage: 'search',
   context: DEFAULT_WORKSHOP_CONTEXT,
+  challengeEntities: [],
   humanDiscussion: {
     challenges: [],
     initialAIIdeas: [],
@@ -54,6 +59,7 @@ const INITIAL_SESSION: WorkshopSessionState = {
   boardChallenge: null,
   finalDecision: null,
   chatHistory: [],
+  interactions: [],
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -74,6 +80,15 @@ export default function App() {
           workshopObjective: parsed.context?.workshopObjective || parsed.context?.objective || '',
           additionalContext: parsed.context?.additionalContext || parsed.context?.background || '',
         };
+        parsed.interactions = Array.isArray(parsed.interactions) ? parsed.interactions : [];
+        parsed.challengeEntities = Array.isArray(parsed.challengeEntities)
+          ? parsed.challengeEntities
+          : (parsed.humanDiscussion?.challenges || []).map((text: string) => ({
+              id: createResearchId('challenge'),
+              text,
+              source: 'ai',
+              originalAIText: text,
+            }));
         return parsed;
       } catch (e) {
         console.error('Failed to parse saved session:', e);
@@ -96,6 +111,36 @@ export default function App() {
       ...prev,
       currentStage: stage as any,
       mainStage: getMainStageForStep(stage),
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const logInteraction = (input: WorkshopInteractionInput) => {
+    setSession((prev) => ({
+      ...prev,
+      interactions: [...(prev.interactions || []), createInteractionEvent(prev.id, input)],
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const updateChallenges = (challenges: WorkshopChallenge[]) => {
+    setSession((prev) => ({
+      ...prev,
+      challengeEntities: challenges,
+      humanDiscussion: {
+        ...prev.humanDiscussion,
+        challenges: challenges.map((challenge) => challenge.text),
+      },
+      updatedAt: Date.now(),
+    }));
+  };
+
+  const updateOpportunities = (opportunities: AIOpportunity[]) => {
+    setSession((prev) => ({
+      ...prev,
+      exploration: prev.exploration
+        ? { ...prev.exploration, opportunities }
+        : { ...SAMPLE_EXPLORATION_OUTPUT, opportunities },
       updatedAt: Date.now(),
     }));
   };
@@ -133,6 +178,12 @@ export default function App() {
       currentStage: 4,
       mainStage: 'representation',
       context: DEFAULT_WORKSHOP_CONTEXT,
+      challengeEntities: SAMPLE_WHITEBOARD_DATA.stage2.challenges.map((text) => ({
+        id: createResearchId('challenge'),
+        text,
+        source: 'ai',
+        originalAIText: text,
+      })),
       humanDiscussion: {
         challenges: SAMPLE_WHITEBOARD_DATA.stage2.challenges,
         initialAIIdeas: SAMPLE_WHITEBOARD_DATA.stage2.initialAIIdeas,
@@ -193,6 +244,7 @@ export default function App() {
       },
 
       chatHistory: [],
+      interactions: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -258,6 +310,14 @@ export default function App() {
 
       setUncertainties(foundUncertainties);
 
+      const challengeSource = imageDataUrl ? 'ai' : textNotes.trim() ? 'human' : 'ai';
+      const challengeEntities: WorkshopChallenge[] = extractedChallenges.map((text) => ({
+        id: createResearchId('challenge'),
+        text,
+        source: challengeSource,
+        ...(challengeSource === 'ai' ? { originalAIText: text } : {}),
+      }));
+
       setSession((prev) => ({
         ...prev,
         currentStage: 3,
@@ -269,6 +329,7 @@ export default function App() {
           rawTextNotes: textNotes,
           isConfirmed: false,
         },
+        challengeEntities,
         updatedAt: Date.now(),
       }));
     } finally {
@@ -302,6 +363,15 @@ export default function App() {
       if (!explorationResult) {
         explorationResult = SAMPLE_EXPLORATION_OUTPUT;
       }
+
+      explorationResult = {
+        ...explorationResult,
+        opportunities: explorationResult.opportunities.map((opportunity) => ({
+          ...opportunity,
+          source: opportunity.source || 'ai',
+          originalAIValue: opportunity.originalAIValue || { ...opportunity },
+        })),
+      };
 
       setSession((prev) => ({
         ...prev,
@@ -502,12 +572,14 @@ export default function App() {
 
         {!isEditingContext && currentStage === 3 && (
           <Page3ConfirmUnderstanding
-            initialChallenges={session.humanDiscussion.challenges}
+            initialChallenges={session.challengeEntities || []}
             initialIdeas={session.humanDiscussion.initialAIIdeas}
             uncertainties={uncertainties}
             onConfirm={handleConfirmUnderstanding}
             onUploadAnother={() => setStage(2)}
             isProcessing={isLoading}
+            onChallengesChange={updateChallenges}
+            onInteraction={logInteraction}
           />
         )}
 
@@ -516,6 +588,25 @@ export default function App() {
             opportunities={session.exploration?.opportunities || SAMPLE_EXPLORATION_OUTPUT.opportunities}
             onConfirmTop3={handleConfirmTop3}
             isSubmitting={isLoading}
+            initialReviews={Object.fromEntries(
+              Object.entries(session.humanReview?.reviews || {}).map(([id, review]) => [
+                id,
+                (review as { decision: ReviewDecision }).decision,
+              ])
+            )}
+            onReviewsChange={(reviews) => setSession((prev) => ({
+              ...prev,
+              humanReview: {
+                ...prev.humanReview,
+                reviews: Object.fromEntries(Object.entries(reviews).map(([id, decision]) => [
+                  id,
+                  { opportunityId: id, decision, comment: prev.humanReview?.reviews[id]?.comment || '' },
+                ])),
+              },
+              updatedAt: Date.now(),
+            }))}
+            onOpportunitiesChange={updateOpportunities}
+            onInteraction={logInteraction}
           />
         )}
 

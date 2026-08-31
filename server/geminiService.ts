@@ -605,6 +605,7 @@ export async function synthesizeRevisedPriorities(
   const fallback: RevisedPrioritiesOutput = {
     revisedPriorities: [
       {
+        id: 'priority-1',
         rank: 1,
         originalName: 'Predictive Multi-Tier Supplier Weak-Signal Radar',
         humanFeedbackSummary: 'Kept with high alignment; team endorsed merging BOM dependency graphs to give end-to-end visibility down to Tier-3 raw materials.',
@@ -613,6 +614,7 @@ export async function synthesizeRevisedPriorities(
         status: 'MODIFIED',
       },
       {
+        id: 'priority-2',
         rank: 2,
         originalName: 'Dynamic 3PL Transit Interruption & Autonomous Freight Rerouting',
         humanFeedbackSummary: 'Kept with governance guardrail: Added human-in-the-loop requirement where logistics directors authorize rerouting actions exceeding $50k.',
@@ -621,6 +623,7 @@ export async function synthesizeRevisedPriorities(
         status: 'MODIFIED',
       },
       {
+        id: 'priority-3',
         rank: 3,
         originalName: 'Generative Crisis Scenario War-Gaming & Dynamic Response Playbooks',
         humanFeedbackSummary: 'Kept for rapid time-to-value (<5 days) to unify cross-functional executive crisis coordination and replace ad-hoc phone trees.',
@@ -679,11 +682,12 @@ TASK:
 Synthesize exactly 3 REVISED STRATEGIC PRIORITIES reflecting the human evaluations.
 For each priority clearly contrast:
 1. rank (1, 2, 3)
-2. originalName (the initial AI opportunity name)
-3. humanFeedbackSummary (concise summary of human review, challenges, or merges)
-4. revisedStrategicFocus (the modified or refined priority title incorporating human guidance)
-5. justification (why this revised version delivers superior executive alignment and feasibility)
-6. status ("CONFIRMED" if kept as-is, "MODIFIED" if altered/merged, or "SUBSTITUTED" if replaced by another opportunity)
+2. id (a stable ID based on the original opportunity ID where possible)
+3. originalName (the initial AI opportunity name)
+4. humanFeedbackSummary (concise summary of human review, challenges, or merges)
+5. revisedStrategicFocus (the modified or refined priority title incorporating human guidance)
+6. justification (why this revised version delivers superior executive alignment and feasibility)
+7. status ("CONFIRMED" if kept as-is, "MODIFIED" if altered/merged, or "SUBSTITUTED" if replaced by another opportunity)
 
 Include an "executiveAlignmentRationale" summarizing how human judgement steered the strategic direction.
 
@@ -691,6 +695,7 @@ Return strict JSON matching this schema:
 {
   "revisedPriorities": [
     {
+      "id": "priority-opp-1",
       "rank": 1,
       "originalName": "string",
       "humanFeedbackSummary": "string",
@@ -712,6 +717,10 @@ Return strict JSON matching this schema:
     });
 
     const parsed = parseCleanJson<RevisedPrioritiesOutput>(response.text || '', fallback);
+    parsed.revisedPriorities = parsed.revisedPriorities.map((priority) => ({
+      ...priority,
+      id: priority.id || `priority-${priority.originalOpportunityId || priority.rank}`,
+    }));
     parsed.generatedAt = Date.now();
     parsed.isConfirmed = false;
     return parsed;
