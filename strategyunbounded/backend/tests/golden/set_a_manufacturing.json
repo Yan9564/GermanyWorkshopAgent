@@ -1,0 +1,11 @@
+{
+  "name": "Manufacturing operations",
+  "problems": [
+    "TODO: Add manufacturing problem 1",
+    "TODO: Add manufacturing problem 2",
+    "TODO: Add manufacturing problem 3",
+    "TODO: Add manufacturing problem 4",
+    "TODO: Add manufacturing problem 5"
+  ],
+  "notes": "Operations-heavy: supply chain, quality control, workforce scheduling, equipment maintenance, inventory forecasting."
+}

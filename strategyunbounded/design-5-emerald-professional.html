@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy Unbounded — Emerald Professional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F0FDF4;
+  --card:#FFFFFF;
+  --tint:#DCFCE7;
+  --forest:#065F46;
+  --emerald:#059669;
+  --bright:#10B981;
+  --sky:#0284C7;
+  --text:#022C22;
+  --text2:#064E3B;
+  --muted:#6B7280;
+  --border:#A7F3D0;
+  --red:#DC2626;
+  --amber:#D97706;
+  --font-display:'DM Serif Display',serif;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ── HEADER ─────────────────────────────────────────── */
+.header{background:#fff;border-bottom:2px solid var(--border);padding:clamp(0.75rem,1.5vw,1.1rem) clamp(1rem,4vw,2.5rem);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:var(--font-display);font-size:clamp(1.1rem,2.5vw,1.5rem);color:var(--forest);letter-spacing:-0.01em}
+.step-indicator{display:flex;align-items:center;gap:0.5rem}
+.step-label{font-size:clamp(0.7rem,1.2vw,0.8rem);color:var(--muted);font-weight:500;margin-right:0.4rem}
+.step-dots{display:flex;gap:6px}
+.step-dot{width:clamp(24px,4vw,32px);height:6px;border-radius:3px;background:#D1FAE5;border:1.5px solid var(--border);transition:background 0.3s}
+.step-dot.active{background:var(--emerald);border-color:var(--emerald)}
+
+/* ── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;min-height:calc(100vh - 68px);padding:clamp(1.5rem,4vw,3rem) clamp(1rem,4vw,2.5rem)}
+.screen.visible{display:flex;flex-direction:column}
+
+/* ── SCREEN 1 ─────────────────────────────────────────── */
+#screen1{flex-direction:row;flex-wrap:wrap;gap:clamp(1.5rem,4vw,3rem);align-items:center;justify-content:center}
+.avatar-col{flex:1 1 clamp(200px,35%,380px);display:flex;flex-direction:column;align-items:center;gap:1rem}
+.avatar-col img{height:clamp(260px,40vh,440px);width:auto;object-fit:contain;display:block}
+.avatar-name-tag{background:var(--tint);color:var(--emerald);font-size:clamp(0.75rem,1.2vw,0.85rem);font-weight:600;padding:0.35rem 1rem;border-radius:50px;border:1px solid var(--border)}
+.intro-col{flex:1 1 clamp(280px,50%,560px);display:flex;flex-direction:column;gap:1.25rem}
+.eyebrow{font-size:clamp(0.65rem,1.1vw,0.75rem);font-weight:700;letter-spacing:0.12em;color:var(--bright);text-transform:uppercase}
+.intro-heading{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.8rem);color:var(--text);line-height:1.2}
+.speech-bubble{background:#fff;border:2px solid var(--border);border-radius:0 16px 16px 16px;padding:clamp(1rem,2.5vw,1.5rem);box-shadow:0 4px 24px rgba(5,150,105,0.08);position:relative;min-height:80px}
+.speech-bubble::before{content:'';position:absolute;top:0;left:-14px;border-width:0 14px 14px 0;border-style:solid;border-color:transparent var(--border) transparent transparent}
+.speech-bubble::after{content:'';position:absolute;top:2px;left:-10px;border-width:0 12px 12px 0;border-style:solid;border-color:transparent #fff transparent transparent}
+.bubble-text{font-size:clamp(0.85rem,1.5vw,1rem);color:var(--text2);line-height:1.7;min-height:60px}
+.typing-dots{display:flex;gap:5px;padding:4px 0;align-items:center}
+.typing-dots span{width:8px;height:8px;border-radius:50%;background:var(--border);animation:bounce 1.2s infinite}
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.btn-primary{background:var(--emerald);color:#fff;border:none;border-radius:50px;padding:clamp(0.75rem,1.5vw,1rem) clamp(1.8rem,4vw,2.8rem);font-family:var(--font-body);font-size:clamp(0.9rem,1.5vw,1rem);font-weight:600;cursor:pointer;transition:background 0.2s,transform 0.15s,box-shadow 0.2s;box-shadow:0 4px 16px rgba(5,150,105,0.25);align-self:flex-start}
+.btn-primary:hover:not(:disabled){background:#047857;transform:translateY(-2px);box-shadow:0 8px 24px rgba(5,150,105,0.3)}
+.btn-primary:disabled{background:#D1D5DB;box-shadow:none;cursor:not-allowed}
+.btn-sub{font-size:clamp(0.7rem,1.1vw,0.78rem);color:var(--muted);margin-top:0.3rem}
+
+/* ── SCREEN 2 ─────────────────────────────────────────── */
+#screen2{flex-direction:row;flex-wrap:wrap;gap:clamp(1.5rem,4vw,2.5rem);align-items:flex-start}
+.s2-avatar-col{flex:0 1 clamp(160px,25%,280px);display:flex;flex-direction:column;gap:1rem;align-items:center}
+.s2-avatar-col img{height:clamp(160px,28vh,320px);width:auto;object-fit:contain}
+.tip-card{background:var(--tint);border:1.5px solid var(--border);border-radius:12px;padding:1rem;font-size:clamp(0.75rem,1.2vw,0.85rem);color:var(--text2);line-height:1.6}
+.tip-card strong{color:var(--forest);display:block;margin-bottom:0.3rem}
+.s2-form-col{flex:1 1 clamp(280px,60%,680px)}
+.s2-heading{font-family:var(--font-display);font-size:clamp(1.6rem,3vw,2.4rem);color:var(--text);margin-bottom:0.4rem}
+.s2-sub{font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--muted);margin-bottom:1.5rem}
+.problem-row{display:flex;align-items:flex-start;gap:0.75rem;margin-bottom:1rem;border-left:3px solid var(--border);padding-left:0.75rem;transition:border-color 0.2s}
+.problem-row:focus-within{border-left-color:var(--emerald)}
+.num-tag{background:var(--emerald);color:#fff;border-radius:50px;width:clamp(28px,3vw,34px);height:clamp(28px,3vw,34px);display:flex;align-items:center;justify-content:center;font-size:clamp(0.7rem,1.1vw,0.8rem);font-weight:700;flex-shrink:0;margin-top:0.6rem}
+.problem-wrap{flex:1;display:flex;flex-direction:column;gap:0.25rem}
+textarea{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:0.75rem 1rem;font-family:var(--font-body);font-size:clamp(0.83rem,1.3vw,0.95rem);color:var(--text);resize:vertical;transition:border-color 0.2s,box-shadow 0.2s;line-height:1.6}
+textarea:focus{outline:none;border-color:var(--emerald);box-shadow:0 0 0 3px rgba(5,150,105,0.12)}
+.char-count{font-size:0.72rem;color:var(--muted);text-align:right}
+.btn-submit{margin-top:1.25rem}
+
+/* ── SCREEN 3 ─────────────────────────────────────────── */
+#screen3{align-items:center;justify-content:center}
+.processing-wrap{display:flex;flex-wrap:wrap;gap:clamp(1.5rem,4vw,3rem);align-items:center;justify-content:center;width:100%}
+.proc-avatar-col{flex:0 1 clamp(140px,22%,240px);display:flex;flex-direction:column;align-items:center;gap:1rem}
+.proc-avatar-col img{height:clamp(180px,28vh,280px);width:auto;object-fit:contain}
+.proc-bubble{background:#fff;border:2px solid var(--border);border-radius:12px;padding:1rem 1.25rem;font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--text2);font-style:italic;box-shadow:0 2px 12px rgba(5,150,105,0.08);min-width:180px;text-align:center}
+.proc-right{flex:1 1 clamp(260px,50%,500px);display:flex;flex-direction:column;gap:1.5rem}
+.proc-heading{font-family:var(--font-display);font-size:clamp(1.5rem,2.8vw,2.2rem);color:var(--text)}
+.agent-tasks{display:flex;flex-direction:column;gap:0.75rem}
+.agent-task{display:flex;align-items:center;gap:0.75rem;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1.1rem}
+.task-icon{width:20px;height:20px;flex-shrink:0}
+.task-icon.spinner{border:2px solid var(--border);border-top-color:var(--emerald);border-radius:50%;animation:spin 0.8s linear infinite}
+.task-icon.done{background:var(--emerald);border-radius:50%;display:flex;align-items:center;justify-content:center}
+.task-icon.done::after{content:'✓';color:#fff;font-size:11px;font-weight:700}
+.task-icon.waiting{background:#F3F4F6;border-radius:50%;border:2px solid #E5E7EB}
+.task-label{font-size:clamp(0.8rem,1.3vw,0.9rem);color:var(--text2);font-weight:500}
+.task-label.done-label{color:var(--emerald)}
+.progress-bar-wrap{background:#D1FAE5;border-radius:50px;height:8px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--emerald),var(--bright));border-radius:50px;width:0;animation:fillBar 4s ease-in-out forwards}
+@keyframes fillBar{to{width:100%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SCREEN 4 ─────────────────────────────────────────── */
+#screen4{flex-direction:column;gap:1.5rem}
+.results-heading{font-family:var(--font-display);font-size:clamp(1.6rem,3vw,2.4rem);color:var(--text)}
+.results-sub{font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--muted)}
+.tabs-nav{display:flex;gap:0;border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs-nav::-webkit-scrollbar{display:none}
+.tab-btn{background:transparent;border:none;padding:0.8rem clamp(0.8rem,2vw,1.5rem);font-family:var(--font-body);font-size:clamp(0.78rem,1.2vw,0.9rem);font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color 0.2s,border-color 0.2s}
+.tab-btn.active{color:var(--forest);border-bottom-color:var(--emerald);font-weight:600}
+.tab-btn:hover:not(.active){color:var(--text2)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.problem-banner{background:var(--tint);border:1.5px solid var(--border);border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1.25rem;font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--forest);font-weight:500}
+.problem-banner span{color:var(--muted);font-weight:400}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:clamp(1rem,2vw,1.5rem)}
+
+/* ── CARD ─────────────────────────────────────────── */
+.use-case-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s,transform 0.2s;display:flex;flex-direction:column}
+.use-case-card:hover{border-color:var(--emerald);box-shadow:0 8px 32px rgba(5,150,105,0.15);transform:translateY(-4px)}
+.card-top{background:var(--bg);padding:0.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+.card-icon{width:32px;height:32px;background:var(--tint);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.card-icon svg{width:16px;height:16px;stroke:var(--forest);fill:none}
+.card-priority-wrap{display:flex;align-items:center;gap:0.4rem;margin-left:auto}
+.priority-badge{font-size:0.7rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:50px;white-space:nowrap}
+.p1-badge{background:var(--emerald);color:#fff}
+.p2-badge{background:var(--sky);color:#fff}
+.p3-badge{background:#9CA3AF;color:#fff}
+.prio-btn{background:transparent;border:none;color:var(--emerald);cursor:pointer;font-size:0.75rem;padding:0.15rem 0.25rem;border-radius:4px;transition:background 0.15s}
+.prio-btn:hover:not(:disabled){background:var(--tint)}
+.prio-btn:disabled{color:#D1D5DB;cursor:not-allowed}
+.card-body{padding:1rem;flex:1;display:flex;flex-direction:column;gap:0.6rem}
+.card-title{font-family:var(--font-display);font-size:clamp(0.95rem,1.5vw,1.1rem);color:var(--text);line-height:1.3}
+.card-summary{font-size:clamp(0.78rem,1.2vw,0.88rem);color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-tags{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:auto}
+.card-tag{font-size:0.68rem;font-weight:500;padding:0.2rem 0.55rem;border-radius:50px;background:#EFF6FF;color:var(--sky)}
+.card-tag.complexity-low{background:#ECFDF5;color:var(--emerald)}
+.card-tag.complexity-medium{background:#FFFBEB;color:var(--amber)}
+.card-tag.complexity-high{background:#FEF2F2;color:var(--red)}
+.card-link{font-size:0.82rem;font-weight:600;color:var(--emerald);text-decoration:none;padding:0.6rem 1rem;border-top:1px solid var(--border);display:block;transition:background 0.15s}
+.card-link:hover{background:var(--bg)}
+
+/* ── MODAL ─────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(2,44,34,0.55);z-index:1000;align-items:center;justify-content:center;padding:clamp(0.5rem,3vw,2rem)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(5,150,105,0.2);max-width:720px;width:100%;max-height:90vh;overflow-y:auto;position:relative;border-left:8px solid var(--emerald);animation:slideUp 0.3s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{padding:1.5rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;position:sticky;top:0;background:#fff;z-index:2}
+.modal-title-wrap{flex:1}
+.modal-title{font-family:var(--font-display);font-size:clamp(1.2rem,2.5vw,1.6rem);color:var(--text);line-height:1.2}
+.modal-problem{font-size:clamp(0.75rem,1.2vw,0.82rem);color:var(--muted);margin-top:0.3rem}
+.modal-close{background:none;border:2px solid var(--border);color:var(--forest);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;flex-shrink:0;transition:background 0.15s}
+.modal-close:hover{background:var(--tint)}
+.modal-body{padding:1.5rem}
+.modal-section{margin-bottom:1.5rem;padding-left:0.85rem;border-left:2px solid var(--emerald)}
+.modal-section-title{font-size:clamp(0.78rem,1.2vw,0.85rem);font-weight:700;color:var(--forest);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.5rem}
+.modal-section p{font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--text2);line-height:1.7}
+.modal-section ul{list-style:none;display:flex;flex-direction:column;gap:0.4rem}
+.modal-section ul li{font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--text2);padding-left:1.2rem;position:relative;line-height:1.6}
+.modal-section ul li::before{content:'●';color:var(--emerald);position:absolute;left:0;font-size:0.6rem;top:0.3rem}
+.modal-meta-row{display:flex;flex-wrap:wrap;gap:0.75rem;margin-bottom:1.5rem}
+.meta-chip{background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:0.6rem 1rem;flex:1 1 120px;min-width:100px}
+.meta-chip-label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:0.3rem;margin-bottom:0.25rem}
+.meta-chip-value{font-size:clamp(0.8rem,1.2vw,0.9rem);color:var(--text);font-weight:500}
+.complexity-chips{display:flex;gap:0.5rem;flex-wrap:wrap}
+.complexity-chip{font-size:0.78rem;font-weight:600;padding:0.35rem 0.9rem;border-radius:50px;border:2px solid var(--border);color:var(--muted);transition:all 0.2s}
+.complexity-chip.active-low{background:#ECFDF5;border-color:var(--emerald);color:var(--emerald)}
+.complexity-chip.active-medium{background:#FFFBEB;border-color:var(--amber);color:var(--amber)}
+.complexity-chip.active-high{background:#FEF2F2;border-color:var(--red);color:var(--red)}
+.feedback-section{border-top:1px solid var(--border);padding-top:1.25rem;margin-top:0.5rem}
+.feedback-label{font-size:clamp(0.82rem,1.3vw,0.95rem);color:var(--text);font-weight:600;margin-bottom:0.75rem}
+.feedback-btns{display:flex;gap:0.75rem;flex-wrap:wrap}
+.feedback-btn{display:flex;align-items:center;gap:0.4rem;padding:0.6rem 1.2rem;border-radius:50px;border:2px solid var(--border);background:#fff;font-family:var(--font-body);font-size:clamp(0.82rem,1.3vw,0.92rem);font-weight:500;cursor:pointer;transition:all 0.2s;color:var(--muted)}
+.feedback-btn:hover{border-color:var(--emerald);color:var(--emerald)}
+.feedback-btn.active-up{background:#ECFDF5;border-color:var(--emerald);color:var(--emerald)}
+.feedback-btn.active-down{background:#FEF2F2;border-color:var(--red);color:var(--red)}
+.modal-guide{position:absolute;top:1rem;right:3.5rem;z-index:3}
+
+/* ── GUIDE ROBOT ─────────────────────────────────────────── */
+.guide-btn{position:fixed;bottom:clamp(1.2rem,3vw,2rem);right:clamp(1.2rem,3vw,2rem);width:52px;height:52px;border-radius:50%;background:var(--emerald);border:none;cursor:pointer;box-shadow:0 4px 20px rgba(5,150,105,0.35);display:flex;align-items:center;justify-content:center;z-index:500;transition:transform 0.2s,box-shadow 0.2s}
+.guide-btn:hover{transform:scale(1.1);box-shadow:0 8px 28px rgba(5,150,105,0.45)}
+.guide-btn svg{width:26px;height:26px;stroke:#fff;fill:none}
+.guide-tooltip{position:fixed;bottom:calc(clamp(1.2rem,3vw,2rem) + 62px);right:clamp(1.2rem,3vw,2rem);background:#fff;border:2px solid var(--border);border-radius:12px;padding:0.9rem 1.1rem;max-width:240px;font-size:clamp(0.78rem,1.2vw,0.85rem);color:var(--text2);line-height:1.6;box-shadow:0 8px 32px rgba(5,150,105,0.12);display:none;z-index:501}
+.guide-tooltip.visible{display:block}
+.guide-tooltip::after{content:'';position:absolute;bottom:-8px;right:20px;border-width:8px 8px 0;border-style:solid;border-color:var(--border) transparent transparent}
+.guide-tooltip::before{content:'';position:absolute;bottom:-5px;right:21px;border-width:7px 7px 0;border-style:solid;border-color:#fff transparent transparent;z-index:1}
+.modal-guide-btn{width:34px;height:34px;border-radius:50%;background:var(--tint);border:1.5px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s;position:relative}
+.modal-guide-btn:hover{background:#A7F3D0}
+.modal-guide-btn svg{width:18px;height:18px;stroke:var(--forest);fill:none}
+.modal-guide-tooltip{position:absolute;top:40px;right:0;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;max-width:200px;font-size:0.78rem;color:var(--text2);line-height:1.5;box-shadow:0 4px 16px rgba(5,150,105,0.1);display:none;z-index:10;width:200px}
+.modal-guide-tooltip.visible{display:block}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">Strategy Unbounded</div>
+  <div class="step-indicator">
+    <span class="step-label" id="step-label">Step 1 of 4</span>
+    <div class="step-dots">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+      <div class="step-dot" id="dot-4"></div>
+    </div>
+  </div>
+</header>
+
+<!-- SCREEN 1: INTRO -->
+<div class="screen visible" id="screen1">
+  <div class="avatar-col">
+    <img src="Benjamin_Avatar.png" alt="Benjamin — Your Guide">
+    <span class="avatar-name-tag">Benjamin · AI Strategy Guide</span>
+  </div>
+  <div class="intro-col">
+    <div class="eyebrow">Part 1 · AI Use Case Discovery</div>
+    <h1 class="intro-heading">Let's uncover your business opportunities.</h1>
+    <div class="speech-bubble">
+      <div class="typing-dots" id="typing-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="bubble-text" id="bubble-text" style="display:none"></div>
+    </div>
+    <button class="btn-primary" id="btn-start" disabled onclick="showScreen(2)">Start Activity →</button>
+    <div class="btn-sub">Takes about 5 minutes</div>
+  </div>
+</div>
+
+<!-- SCREEN 2: PROBLEM INPUT -->
+<div class="screen" id="screen2">
+  <div class="s2-avatar-col">
+    <img src="Benjamin_Avatar.png" alt="Benjamin">
+    <div class="tip-card">
+      <strong>💡 Think about:</strong>
+      Slow processes, customer pain points, missed data opportunities, manual work, compliance risks
+    </div>
+  </div>
+  <div class="s2-form-col">
+    <h2 class="s2-heading">What are the 5 biggest challenges?</h2>
+    <p class="s2-sub">Be honest and specific — our AI works best with real, grounded problems.</p>
+    <div id="problems-form">
+      <!-- generated by JS -->
+    </div>
+    <button class="btn-primary btn-submit" id="btn-submit" disabled onclick="submitProblems()">Analyse with AI →</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: PROCESSING -->
+<div class="screen" id="screen3">
+  <div class="processing-wrap">
+    <div class="proc-avatar-col">
+      <img src="Benjamin_Avatar.png" alt="Benjamin">
+      <div class="proc-bubble" id="proc-message">Let me analyse your five challenges…</div>
+    </div>
+    <div class="proc-right">
+      <h2 class="proc-heading">AI Analysis in Progress</h2>
+      <div class="agent-tasks" id="agent-tasks">
+        <div class="agent-task">
+          <div class="task-icon waiting" id="task-icon-0"></div>
+          <span class="task-label" id="task-label-0">Parsing your challenges…</span>
+        </div>
+        <div class="agent-task">
+          <div class="task-icon waiting" id="task-icon-1"></div>
+          <span class="task-label" id="task-label-1">Generating AI use cases…</span>
+        </div>
+        <div class="agent-task">
+          <div class="task-icon waiting" id="task-icon-2"></div>
+          <span class="task-label" id="task-label-2">Ranking by business impact…</span>
+        </div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: RESULTS -->
+<div class="screen" id="screen4">
+  <div>
+    <h2 class="results-heading">15 AI Use Cases Identified</h2>
+    <p class="results-sub">Select a challenge tab to explore its use cases.</p>
+  </div>
+  <nav class="tabs-nav" id="tabs-nav"></nav>
+  <div id="tabs-content"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <h3 class="modal-title" id="modal-title"></h3>
+        <div class="modal-problem" id="modal-problem"></div>
+      </div>
+      <div class="modal-guide" style="position:relative">
+        <button class="modal-guide-btn" onclick="toggleModalGuide(event)">
+          <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/><circle cx="15" cy="14" r="1.5" fill="currentColor"/><path d="M12 8V5" stroke-linecap="round"/><circle cx="12" cy="4" r="1.5" fill="currentColor"/><path d="M7 19v2M17 19v2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="modal-guide-tooltip" id="modal-guide-tooltip">Mark ideas that excite you — your feedback shapes the final workshop output.</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">Description</div>
+        <p id="modal-description"></p>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">How It Works</div>
+        <ul id="modal-how"></ul>
+      </div>
+      <div class="modal-meta-row">
+        <div class="meta-chip">
+          <div class="meta-chip-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>Data Required</div>
+          <div class="meta-chip-value" id="modal-data"></div>
+        </div>
+        <div class="meta-chip">
+          <div class="meta-chip-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Time to Implement</div>
+          <div class="meta-chip-value" id="modal-time"></div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Complexity</div>
+        <div class="complexity-chips" id="modal-complexity"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Estimated Cost &amp; ROI</div>
+        <p id="modal-roi"></p>
+      </div>
+      <div class="feedback-section">
+        <div class="feedback-label">Was this use case relevant to your business?</div>
+        <div class="feedback-btns">
+          <button class="feedback-btn" id="btn-up" onclick="setFeedback('up')">👍 Yes, interesting!</button>
+          <button class="feedback-btn" id="btn-down" onclick="setFeedback('down')">👎 Not for us</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE ROBOT -->
+<button class="guide-btn" id="guide-btn" onclick="toggleGuide()" title="Need help?">
+  <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><circle cx="9" cy="14" r="1.5" fill="white"/><circle cx="15" cy="14" r="1.5" fill="white"/><path d="M12 8V5" stroke-linecap="round"/><circle cx="12" cy="4" r="1.5" fill="white"/><path d="M7 21v1M17 21v1" stroke-linecap="round"/></svg>
+</button>
+<div class="guide-tooltip" id="guide-tooltip"></div>
+
+<script>
+const API_KEY = 'YOUR_OPENAI_API_KEY';
+const ENDPOINT = 'YOUR_OPENAI_ENDPOINT';
+
+const GUIDE_TIPS = {
+  1: "When you're ready, click 'Start Activity' to begin identifying your business challenges.",
+  2: "Describe each problem from the perspective of the people experiencing it — that gives the AI the richest context.",
+  3: "Our agents are working hard. Sit tight — results will be ready shortly.",
+  4: "Click a tab to switch between challenges. Click any card to read the full use case."
+};
+
+const SPEECH = "Welcome to Strategy Unbounded. Your task today is to identify five real problems your organisation faces — challenges, inefficiencies, risks, or opportunities being missed. Once you've shared those problems, our AI agents will brainstorm powerful AI-driven solutions for each one. Take a moment to reflect. When you're ready, click below to begin.";
+
+const PROC_MSGS = [
+  "Let me analyse your five challenges…",
+  "Our AI agents are generating use cases…",
+  "Ranking solutions by business impact…",
+  "Almost done — just finalising…"
+];
+
+const MOCK_PROBLEMS = [
+  "Manual invoice processing takes 3 days and is error-prone",
+  "High customer churn rate with no early warning system",
+  "Supply chain disruptions causing stock-outs",
+  "Slow recruitment process losing top candidates",
+  "Regulatory compliance monitoring done manually"
+];
+
+const MOCK_USE_CASES = [
+  {id:0,problem_index:0,title:"Intelligent Invoice Processing",summary:"Automate end-to-end invoice capture, validation, and approval routing using computer vision and NLP.",description:"Deploy an AI system that reads invoices from any format — PDF, image, or email — extracts key fields using OCR and named entity recognition, then validates data against your ERP records before routing for approval. This eliminates manual data entry and dramatically reduces processing time from days to minutes.",how_it_works:["OCR engine captures invoice data from any format or channel","NLP model extracts vendor, amount, date, and line items","Automated validation checks against ERP purchase orders","Smart routing sends exceptions to the right approver instantly"],data_required:"Historical invoices, ERP purchase order records, approval workflow rules",time_to_implement:"3–5 months for MVP",complexity:"Medium",cost_roi:"£70k–£120k build cost, expected 4× ROI within 12 months",priority:1},
+  {id:1,problem_index:0,title:"Accounts Payable Automation",summary:"Streamline the full AP cycle from receipt to payment with AI-driven matching and anomaly detection.",description:"An intelligent AP platform that matches invoices to purchase orders and goods receipts in a three-way match, flags anomalies, and processes straight-through payments for matched items. Humans only review exceptions, freeing finance teams for higher-value work.",how_it_works:["Automated three-way matching across PO, GR, and invoice","ML anomaly detection flags duplicate or suspicious invoices","Straight-through processing for fully matched transactions","Exception dashboard for human review of flagged items"],data_required:"Purchase orders, goods receipts, payment history, vendor master data",time_to_implement:"4–6 months",complexity:"Medium",cost_roi:"£90k–£150k, 60% reduction in AP processing cost",priority:2},
+  {id:2,problem_index:0,title:"Vendor Risk Scoring AI",summary:"Continuously assess and score vendor financial health, compliance, and delivery risk using AI.",description:"A risk intelligence platform that aggregates public and internal data to generate real-time vendor risk scores. It monitors financial signals, news sentiment, compliance changes, and delivery performance, alerting procurement teams before issues escalate.",how_it_works:["Data ingestion from financial databases, news, and internal ERP","ML model scores vendors on financial, operational, and compliance risk","Automated alerts when a vendor crosses a risk threshold","Dashboard showing risk trends and recommended mitigation actions"],data_required:"Vendor master data, financial statements, delivery records, news feeds",time_to_implement:"5–7 months",complexity:"High",cost_roi:"£100k–£180k, prevents an estimated £500k+ in supply disruption annually",priority:3},
+  {id:3,problem_index:1,title:"Customer Churn Prediction",summary:"Identify at-risk customers weeks before they cancel using ML behavioural signals.",description:"Build a predictive model that analyses customer usage patterns, support interactions, billing history, and engagement signals to assign a churn probability score. Customer success teams receive weekly watchlists with recommended interventions before customers disengage.",how_it_works:["Feature engineering from CRM, product usage, and billing data","Gradient boosting model trained on historical churn events","Weekly automated churn risk scores pushed to CRM","Playbook recommendations generated per risk segment"],data_required:"CRM records, product usage logs, billing history, support tickets",time_to_implement:"3–4 months",complexity:"Medium",cost_roi:"£60k–£100k build, reduces churn rate by 15–25%, worth £500k+ annually",priority:1},
+  {id:4,problem_index:1,title:"AI Support Agent",summary:"Deploy a conversational AI agent that resolves common customer queries instantly, 24/7.",description:"A large language model-powered support agent trained on your product documentation, FAQs, and resolved tickets. It handles Tier-1 queries autonomously and escalates complex issues to human agents with full context pre-filled, reducing resolution time and support costs.",how_it_works:["LLM fine-tuned on product docs, FAQs, and historical tickets","Intent classification routes to automated resolution or human","Seamless escalation with full conversation context passed to agent","Continuous learning from resolved tickets and agent feedback"],data_required:"Support ticket history, product documentation, FAQ database",time_to_implement:"2–4 months",complexity:"Low",cost_roi:"£40k–£80k, 40% reduction in Tier-1 support volume",priority:2},
+  {id:5,problem_index:1,title:"Sentiment Analysis Pipeline",summary:"Monitor customer sentiment across all channels in real time to detect dissatisfaction early.",description:"An NLP pipeline that ingests customer reviews, survey responses, support chat, and social mentions to produce real-time sentiment scores by product, region, and customer segment. Negative sentiment spikes trigger alerts so teams can act before issues go public.",how_it_works:["Multi-channel ingestion from reviews, surveys, chat, and social","Aspect-based sentiment model tags sentiment by product feature","Real-time dashboard with trend analysis and drill-down","Automated alerts to customer success on negative sentiment spikes"],data_required:"Customer reviews, NPS survey data, support chat logs, social media mentions",time_to_implement:"2–3 months",complexity:"Low",cost_roi:"£30k–£60k, enables proactive retention worth £200k+ annually",priority:3},
+  {id:6,problem_index:2,title:"Supply Chain Demand Forecasting",summary:"Replace manual spreadsheet forecasting with ML models that predict demand with 30% greater accuracy.",description:"A machine learning forecasting platform that combines historical sales data, seasonality patterns, promotional calendars, and external signals such as weather and economic indicators to produce highly accurate demand forecasts at SKU and location level.",how_it_works:["Time-series models (LSTM/XGBoost ensemble) per product category","External signal integration: weather, events, economic indices","Automated forecast refresh on a weekly or daily cadence","Integration with ERP for automatic replenishment suggestions"],data_required:"Historical sales data, inventory levels, promotional calendar, external signal feeds",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£120k–£200k build, 20–30% reduction in stock-outs and overstock",priority:1},
+  {id:7,problem_index:2,title:"Inventory Anomaly Detection",summary:"Detect inventory discrepancies and shrinkage in real time using AI monitoring.",description:"An anomaly detection system that continuously monitors inventory movements across warehouses and stores, flagging unexpected variances that indicate theft, miscounting, or system errors. Early detection prevents costly write-offs.",how_it_works:["Real-time ingestion of inventory transactions from WMS","Statistical anomaly detection identifies unusual patterns","Root-cause classification distinguishes theft, error, or system glitch","Automated alerts to warehouse managers with evidence trail"],data_required:"Warehouse management system data, historical inventory records, transaction logs",time_to_implement:"3–4 months",complexity:"Medium",cost_roi:"£70k–£110k, reduces inventory shrinkage by 20–35%",priority:2},
+  {id:8,problem_index:2,title:"Logistics Route Optimisation",summary:"Optimise delivery routes dynamically using AI to cut transport costs and improve on-time delivery.",description:"A real-time route optimisation engine that considers vehicle capacity, delivery windows, traffic conditions, and fuel costs to compute optimal routes. Dynamic re-routing handles disruptions as they occur.",how_it_works:["Constraint-based optimisation model incorporates 20+ variables","Live traffic and weather data feeds for dynamic re-routing","Driver app integration pushes updated routes instantly","KPI dashboard tracks on-time delivery and cost per mile"],data_required:"Delivery orders, vehicle fleet data, traffic APIs, historical route performance",time_to_implement:"3–5 months",complexity:"Medium",cost_roi:"£80k–£130k, 10–18% reduction in logistics cost",priority:3},
+  {id:9,problem_index:3,title:"AI Candidate Screening",summary:"Reduce time-to-screen by 70% with AI that ranks candidates against role criteria objectively.",description:"An intelligent screening platform that parses CVs, matches candidates to job requirements, and ranks applicants using a configurable scoring model. Bias-reduction techniques ensure fairness while dramatically cutting manual sifting time.",how_it_works:["NLP parses CVs and extracts skills, experience, and qualifications","Configurable scoring rubric matches candidate profile to job spec","Ranked shortlist presented to recruiters with explanation per candidate","Bias audit module flags potential discriminatory signals"],data_required:"Job descriptions, historical CVs, hiring outcomes, competency frameworks",time_to_implement:"3–4 months",complexity:"Medium",cost_roi:"£60k–£100k, 70% reduction in time-to-shortlist, saving £150k/year in recruiter time",priority:1},
+  {id:10,problem_index:3,title:"Employee Productivity Coach",summary:"Deliver personalised AI coaching nudges to employees based on work pattern and performance data.",description:"An AI-powered productivity assistant that analyses calendar, task completion, and communication patterns to identify bottlenecks and deliver personalised recommendations. Managers receive aggregated team health reports without individual surveillance.",how_it_works:["Anonymised analysis of calendar, task, and communication metadata","ML model identifies productivity patterns and energy peaks","Weekly coaching nudges delivered via Slack or Teams integration","Aggregated team health dashboard for managers"],data_required:"Calendar data, task management system, communication metadata (anonymised)",time_to_implement:"4–5 months",complexity:"Medium",cost_roi:"£80k–£130k, 10–15% productivity uplift across knowledge workers",priority:2},
+  {id:11,problem_index:3,title:"Knowledge Graph Assistant",summary:"Build an AI assistant that surfaces institutional knowledge instantly from across your organisation.",description:"A knowledge graph combined with a generative AI interface that allows employees to query internal documentation, policies, past projects, and expert directories in natural language. Reduces time wasted searching for information.",how_it_works:["Document ingestion builds a connected knowledge graph","LLM-powered interface accepts natural language queries","Answers are grounded in verified internal sources with citations","Expert directory integration routes complex queries to the right person"],data_required:"Internal documentation, SharePoint/Confluence content, expert profiles, project archives",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£100k–£160k, saves an estimated 2 hours per employee per week",priority:3},
+  {id:12,problem_index:4,title:"Real-Time Compliance Monitor",summary:"Continuously monitor regulatory requirements and flag non-compliance before it becomes a liability.",description:"An AI platform that ingests regulatory updates, maps them to internal policies and processes, and continuously checks for gaps or violations. Compliance teams receive prioritised alerts with remediation guidance.",how_it_works:["Regulatory feed ingestion from FCA, GDPR, ISO, and sector bodies","NLP maps new regulations to internal policy and process inventory","Automated gap analysis highlights non-compliant areas","Remediation playbooks generated with ownership assignment"],data_required:"Internal policies, process documentation, regulatory feeds, audit history",time_to_implement:"5–7 months",complexity:"High",cost_roi:"£130k–£200k, avoids regulatory fines averaging £1M+ per incident",priority:1},
+  {id:13,problem_index:4,title:"Financial Risk Scoring",summary:"Automate credit and counterparty risk assessment using ML across your entire portfolio.",description:"A machine learning risk engine that combines financial data, market signals, and behavioural patterns to generate real-time risk scores for customers or counterparties. Risk limits are enforced automatically with escalation for high-risk cases.",how_it_works:["Multi-source data ingestion from credit bureaus, financials, and market data","Ensemble ML model scores creditworthiness and default probability","Real-time scoring integrated into onboarding and transaction workflows","Risk committee dashboard with portfolio-level concentration analysis"],data_required:"Credit bureau data, financial statements, transaction history, market data feeds",time_to_implement:"5–7 months",complexity:"High",cost_roi:"£150k–£250k, 30% reduction in credit loss provisions",priority:2},
+  {id:14,problem_index:4,title:"Revenue Optimisation Engine",summary:"Use AI to identify pricing, upsell, and cross-sell opportunities that maximise revenue per customer.",description:"A revenue intelligence platform that analyses customer purchase history, price elasticity, and propensity models to recommend optimal pricing and next-best-offer strategies. Sales teams receive prioritised opportunity lists with expected revenue impact.",how_it_works:["Price elasticity modelling per product, segment, and channel","Propensity-to-buy model scores upsell and cross-sell opportunities","Next-best-offer recommendations pushed to CRM and sales tools","A/B testing framework continuously improves recommendation accuracy"],data_required:"Purchase history, pricing data, CRM records, product catalogue",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£100k–£170k, 8–15% uplift in revenue per customer",priority:3}
+];
+
+let currentScreen = 1;
+let problems = [...MOCK_PROBLEMS];
+let useCases = [];
+let priorities = {};
+let feedback = {};
+let currentModalId = null;
+let guideOpen = false;
+let modalGuideOpen = false;
+
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById('screen' + n).classList.add('visible');
+  currentScreen = n;
+  document.getElementById('step-label').textContent = 'Step ' + n + ' of 4';
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.toggle('active', i <= n);
+  }
+  guideOpen = false;
+  document.getElementById('guide-tooltip').classList.remove('visible');
+}
+
+// Typewriter
+function typewriter(el, text, callback) {
+  const words = text.split(' ');
+  let i = 0;
+  el.textContent = '';
+  el.style.display = 'block';
+  function next() {
+    if (i < words.length) {
+      el.textContent += (i === 0 ? '' : ' ') + words[i++];
+      setTimeout(next, 60);
+    } else {
+      if (callback) callback();
+    }
+  }
+  next();
+}
+
+function initScreen1() {
+  const dots = document.getElementById('typing-dots');
+  const textEl = document.getElementById('bubble-text');
+  setTimeout(() => {
+    dots.style.display = 'none';
+    typewriter(textEl, SPEECH, () => {
+      document.getElementById('btn-start').disabled = false;
+    });
+  }, 1800);
+}
+
+// Build problem form
+function buildForm() {
+  const form = document.getElementById('problems-form');
+  form.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    form.innerHTML += `
+      <div class="problem-row">
+        <span class="num-tag">0${i+1}</span>
+        <div class="problem-wrap">
+          <textarea rows="3" maxlength="300" placeholder="Describe challenge ${i+1}…" oninput="validateForm()" id="prob-${i}"></textarea>
+          <div class="char-count" id="cc-${i}">0 / 300</div>
+        </div>
+      </div>`;
+  }
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('prob-' + i).addEventListener('input', function() {
+      document.getElementById('cc-' + i).textContent = this.value.length + ' / 300';
+    });
+  }
+}
+
+function validateForm() {
+  let valid = true;
+  for (let i = 0; i < 5; i++) {
+    const v = (document.getElementById('prob-' + i) || {}).value || '';
+    if (v.trim().length < 10) { valid = false; break; }
+  }
+  document.getElementById('btn-submit').disabled = !valid;
+}
+
+function submitProblems() {
+  problems = [];
+  for (let i = 0; i < 5; i++) {
+    problems.push(document.getElementById('prob-' + i).value.trim());
+  }
+  showScreen(3);
+  startProcessing();
+}
+
+// Processing
+function startProcessing() {
+  let msgIdx = 0;
+  const msgEl = document.getElementById('proc-message');
+  const msgInterval = setInterval(() => {
+    msgIdx = (msgIdx + 1) % PROC_MSGS.length;
+    msgEl.textContent = PROC_MSGS[msgIdx];
+  }, 3000);
+
+  // Task states
+  const taskStates = [
+    {icon: 'task-icon-0', label: 'task-label-0', doneText: 'Challenge analysis complete ✓'},
+    {icon: 'task-icon-1', label: 'task-label-1', doneText: 'Use cases generated ✓'},
+    {icon: 'task-icon-2', label: 'task-label-2', doneText: 'Priority ranking complete ✓'}
+  ];
+
+  function activateTask(idx) {
+    const icon = document.getElementById(taskStates[idx].icon);
+    icon.className = 'task-icon spinner';
+  }
+  function completeTask(idx) {
+    const icon = document.getElementById(taskStates[idx].icon);
+    icon.className = 'task-icon done';
+    const lbl = document.getElementById(taskStates[idx].label);
+    lbl.textContent = taskStates[idx].doneText;
+    lbl.className = 'task-label done-label';
+  }
+
+  activateTask(0);
+  setTimeout(() => { completeTask(0); activateTask(1); }, 1300);
+  setTimeout(() => { completeTask(1); activateTask(2); }, 2600);
+  setTimeout(() => { completeTask(2); }, 3800);
+
+  callLLM(problems).then(data => {
+    clearInterval(msgInterval);
+    useCases = data;
+    data.forEach(uc => { priorities[uc.id] = uc.priority; });
+    setTimeout(() => { showScreen(4); renderResults(); }, 4200);
+  });
+}
+
+async function callLLM(probs) {
+  if (API_KEY === 'YOUR_OPENAI_API_KEY') return MOCK_USE_CASES;
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer ' + API_KEY},
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: {type: 'json_object'},
+        messages: [{
+          role: 'system',
+          content: "You are a strategic AI consultant. Given 5 company problems, generate exactly 3 AI-powered use cases per problem (15 total). Return JSON with key 'use_cases' containing array of 15 objects. Each: id(0-14), problem_index(0-4), title, summary(one sentence), description(2-3 sentences), how_it_works(array of 4 strings), data_required, time_to_implement, complexity('Low'|'Medium'|'High'), cost_roi, priority(1|2|3)."
+        },{
+          role: 'user',
+          content: probs.map((p,i) => (i+1)+'. '+p).join('\n')
+        }]
+      })
+    });
+    const d = await res.json();
+    const uc = JSON.parse(d.choices[0].message.content).use_cases;
+    uc.forEach(u => { priorities[u.id] = u.priority; });
+    return uc;
+  } catch(e) {
+    MOCK_USE_CASES.forEach(u => { priorities[u.id] = u.priority; });
+    return MOCK_USE_CASES;
+  }
+}
+
+// Results / Tabs
+function renderResults() {
+  const nav = document.getElementById('tabs-nav');
+  const content = document.getElementById('tabs-content');
+  nav.innerHTML = '';
+  content.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = 'Challenge ' + (i+1);
+    btn.onclick = () => switchTab(i);
+    btn.id = 'tab-' + i;
+    nav.appendChild(btn);
+
+    const panel = document.createElement('div');
+    panel.className = 'tab-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + i;
+    const prob = problems[i] || MOCK_PROBLEMS[i];
+    panel.innerHTML = `<div class="problem-banner"><span>Challenge ${i+1}:</span> ${escHtml(prob)}</div><div class="cards-grid" id="grid-${i}"></div>`;
+    content.appendChild(panel);
+
+    const cards = useCases.filter(u => u.problem_index === i);
+    panel.querySelector('#grid-' + i).innerHTML = cards.map(uc => cardHTML(uc)).join('');
+  }
+}
+
+function switchTab(idx) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i === idx));
+}
+
+function cardHTML(uc) {
+  const p = priorities[uc.id] || uc.priority;
+  const icons = [
+    '<path d="M9.5 2a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zM15 15l4 4" stroke-linecap="round"/>',
+    '<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>',
+    '<path d="M18 20V10M12 20V4M6 20v-6"/>'
+  ];
+  const iconIdx = uc.id % 3;
+  const badgeCls = ['p1-badge','p2-badge','p3-badge'][p-1];
+  const cplx = uc.complexity;
+  const cplxCls = cplx === 'Low' ? 'complexity-low' : cplx === 'Medium' ? 'complexity-medium' : 'complexity-high';
+  return `<div class="use-case-card" onclick="openModal(${uc.id})">
+    <div class="card-top">
+      <div class="card-icon"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round">${icons[iconIdx]}</svg></div>
+      <div class="card-priority-wrap">
+        <button class="prio-btn" onclick="event.stopPropagation();changePriority(${uc.id},-1)" ${p<=1?'disabled':''} title="Increase priority">▲</button>
+        <span class="priority-badge ${badgeCls}" id="badge-${uc.id}">Priority ${p}</span>
+        <button class="prio-btn" onclick="event.stopPropagation();changePriority(${uc.id},1)" ${p>=3?'disabled':''} title="Decrease priority">▼</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${escHtml(uc.title)}</div>
+      <div class="card-summary">${escHtml(uc.summary)}</div>
+      <div class="card-tags">
+        <span class="card-tag ${cplxCls}">${cplx} complexity</span>
+        <span class="card-tag">${escHtml(uc.time_to_implement)}</span>
+      </div>
+    </div>
+    <a class="card-link" onclick="event.preventDefault();event.stopPropagation();openModal(${uc.id})">Explore →</a>
+  </div>`;
+}
+
+function changePriority(id, delta) {
+  const cur = priorities[id] || 1;
+  const nv = Math.max(1, Math.min(3, cur + delta));
+  priorities[id] = nv;
+  const badgeCls = ['p1-badge','p2-badge','p3-badge'][nv-1];
+  const badge = document.getElementById('badge-' + id);
+  if (badge) {
+    badge.className = 'priority-badge ' + badgeCls;
+    badge.textContent = 'Priority ' + nv;
+  }
+  // update buttons
+  const card = badge ? badge.closest('.use-case-card') : null;
+  if (card) {
+    const btns = card.querySelectorAll('.prio-btn');
+    btns[0].disabled = nv <= 1;
+    btns[1].disabled = nv >= 3;
+  }
+}
+
+// Modal
+function openModal(id) {
+  const uc = useCases.find(u => u.id === id);
+  if (!uc) return;
+  currentModalId = id;
+  document.getElementById('modal-title').textContent = uc.title;
+  document.getElementById('modal-problem').textContent = 'Re: ' + (problems[uc.problem_index] || MOCK_PROBLEMS[uc.problem_index]).substring(0,70) + '…';
+  document.getElementById('modal-description').textContent = uc.description;
+  document.getElementById('modal-how').innerHTML = uc.how_it_works.map(h => `<li>${escHtml(h)}</li>`).join('');
+  document.getElementById('modal-data').textContent = uc.data_required;
+  document.getElementById('modal-time').textContent = uc.time_to_implement;
+  const cplx = uc.complexity;
+  document.getElementById('modal-complexity').innerHTML = ['Low','Medium','High'].map(c => {
+    const active = c === cplx ? (c==='Low'?'active-low':c==='Medium'?'active-medium':'active-high') : '';
+    return `<span class="complexity-chip ${active}">${c}</span>`;
+  }).join('');
+  document.getElementById('modal-roi').textContent = uc.cost_roi;
+  updateFeedbackUI();
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('modal-guide-tooltip').classList.remove('visible');
+  modalGuideOpen = false;
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentModalId = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function setFeedback(type) {
+  if (currentModalId === null) return;
+  feedback[currentModalId] = feedback[currentModalId] === type ? null : type;
+  updateFeedbackUI();
+}
+
+function updateFeedbackUI() {
+  const fb = feedback[currentModalId];
+  const up = document.getElementById('btn-up');
+  const dn = document.getElementById('btn-down');
+  up.className = 'feedback-btn' + (fb === 'up' ? ' active-up' : '');
+  dn.className = 'feedback-btn' + (fb === 'down' ? ' active-down' : '');
+}
+
+function toggleGuide() {
+  guideOpen = !guideOpen;
+  const tt = document.getElementById('guide-tooltip');
+  tt.textContent = GUIDE_TIPS[currentScreen] || '';
+  tt.classList.toggle('visible', guideOpen);
+}
+
+function toggleModalGuide(e) {
+  e.stopPropagation();
+  modalGuideOpen = !modalGuideOpen;
+  document.getElementById('modal-guide-tooltip').classList.toggle('visible', modalGuideOpen);
+}
+
+// Init
+buildForm();
+initScreen1();
+</script>
+</body>
+</html>

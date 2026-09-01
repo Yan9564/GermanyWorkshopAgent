@@ -1,0 +1,1 @@
+ALTER TABLE use_cases ADD COLUMN IF NOT EXISTS also_addresses INTEGER[] NOT NULL DEFAULT '{}';

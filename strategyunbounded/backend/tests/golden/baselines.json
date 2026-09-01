@@ -1,0 +1,5 @@
+{
+  "set_a_manufacturing": { "session_mean": null, "cross_problem_precision": null },
+  "set_b_retail": { "session_mean": null, "cross_problem_precision": null },
+  "set_c_professional_services": { "session_mean": null, "cross_problem_precision": null }
+}

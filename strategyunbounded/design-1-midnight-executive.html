@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy Unbounded — Midnight Executive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070B14;
+    --surface: #0D1525;
+    --surface-2: #14213A;
+    --gold: #C8A84B;
+    --gold-light: #E4C76B;
+    --gold-dim: rgba(200,168,75,0.12);
+    --gold-glow: rgba(200,168,75,0.25);
+    --text: #EDE9E2;
+    --text-muted: #8A8FA8;
+    --border: #1E2B45;
+    --p1: #C8A84B;
+    --p2: #9EA3B8;
+    --p3: #8B6B4F;
+    --green: #3D8B6B;
+    --amber: #B8862A;
+    --red: #8B3D3D;
+    --radius: clamp(8px,1.5vw,14px);
+    --gap: clamp(12px,2.5vw,24px);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    font-size: clamp(14px, 1.6vw, 16px);
+    line-height: 1.6;
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(14px,3vw,24px) clamp(20px,5vw,60px);
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,11,20,0.95);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(18px,3.5vw,26px);
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+
+  .logo span { font-weight: 300; color: var(--text-muted); }
+
+  .step-indicator {
+    font-size: clamp(11px,1.4vw,13px);
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .step-indicator .step-num {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Screen 1: Intro ── */
+  #screen-1 .screen-inner {
+    min-height: calc(100vh - 65px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(30px,6vw,80px) clamp(20px,5vw,60px);
+  }
+
+  .intro-layout {
+    display: flex;
+    align-items: center;
+    gap: clamp(30px,6vw,80px);
+    max-width: 1100px;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Avatar */
+  .avatar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .avatar-ring {
+    position: relative;
+    width: clamp(160px,22vw,220px);
+    height: clamp(160px,22vw,220px);
+  }
+
+  .avatar-ring::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    animation: ring-pulse 2.8s ease-in-out infinite;
+    opacity: 0.6;
+  }
+
+  .avatar-ring::after {
+    content: '';
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    animation: ring-pulse 2.8s ease-in-out 0.7s infinite;
+    opacity: 0.3;
+  }
+
+  @keyframes ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.06); opacity: 0.8; }
+  }
+
+  .avatar-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--gold);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .avatar-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  .avatar-svg-fallback {
+    width: 55%;
+    height: 55%;
+    opacity: 0.6;
+    color: var(--gold);
+  }
+
+  .avatar-label {
+    font-size: clamp(10px,1.2vw,12px);
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  /* Speech Bubble */
+  .bubble-col {
+    flex: 1;
+    min-width: min(100%, 340px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(20px,3vw,32px);
+  }
+
+  .speech-bubble {
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius);
+    padding: clamp(20px,3.5vw,36px);
+    position: relative;
+    box-shadow: 0 0 40px rgba(200,168,75,0.06);
+  }
+
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 40px;
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 10px solid var(--gold);
+  }
+
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 41px;
+    width: 0;
+    height: 0;
+    border-top: 9px solid transparent;
+    border-bottom: 9px solid transparent;
+    border-right: 9px solid var(--surface);
+  }
+
+  @media (max-width: 600px) {
+    .speech-bubble::before,
+    .speech-bubble::after { display: none; }
+  }
+
+  .bubble-text {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(14px,1.8vw,17px);
+    line-height: 1.75;
+    color: var(--text);
+    min-height: 6em;
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--gold);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 0.9s step-end infinite;
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* CTA Button */
+  .btn-begin {
+    padding: clamp(12px,2vw,16px) clamp(28px,4vw,48px);
+    border: 1.5px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(13px,1.5vw,15px);
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    border-radius: var(--radius);
+    cursor: not-allowed;
+    opacity: 0.35;
+    transition: all 0.4s ease;
+    text-transform: uppercase;
+    align-self: flex-start;
+  }
+
+  .btn-begin.active {
+    cursor: pointer;
+    opacity: 1;
+    background: var(--gold);
+    color: var(--bg);
+  }
+
+  .btn-begin.active:hover {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(200,168,75,0.3);
+  }
+
+  /* ── Screen 2: Problem Input ── */
+  #screen-2 .screen-inner {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: clamp(30px,5vw,60px) clamp(20px,5vw,40px);
+  }
+
+  .screen-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px,5vw,48px);
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .screen-subtitle {
+    font-size: clamp(13px,1.6vw,15px);
+    color: var(--text-muted);
+    margin-bottom: clamp(28px,4vw,48px);
+    font-weight: 300;
+  }
+
+  .problem-list { display: flex; flex-direction: column; gap: clamp(16px,2.5vw,24px); }
+
+  .problem-row {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(12px,2vw,20px);
+  }
+
+  .problem-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(22px,3.5vw,32px);
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1;
+    padding-top: 10px;
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+
+  .problem-field { flex: 1; position: relative; }
+
+  .problem-field textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(13px,1.5vw,15px);
+    font-weight: 300;
+    padding: clamp(12px,2vw,18px) clamp(14px,2.5vw,20px);
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.6;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    outline: none;
+  }
+
+  .problem-field textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--gold-dim);
+  }
+
+  .problem-field textarea::placeholder { color: var(--text-muted); opacity: 0.6; }
+
+  .char-count {
+    text-align: right;
+    font-size: clamp(10px,1.2vw,12px);
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .char-count.ready { color: var(--gold); }
+
+  .btn-submit {
+    margin-top: clamp(24px,3.5vw,40px);
+    padding: clamp(13px,2vw,17px) clamp(32px,5vw,56px);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(13px,1.5vw,15px);
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    border-radius: var(--radius);
+    cursor: not-allowed;
+    opacity: 0.5;
+    transition: all 0.35s ease;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-submit.active {
+    cursor: pointer;
+    opacity: 1;
+    border-color: var(--gold);
+    color: var(--gold);
+    background: transparent;
+  }
+
+  .btn-submit.active:hover {
+    background: var(--gold);
+    color: var(--bg);
+    box-shadow: 0 8px 30px rgba(200,168,75,0.25);
+    transform: translateY(-2px);
+  }
+
+  /* ── Screen 3: Processing ── */
+  #screen-3 .screen-inner {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px,4vw,48px);
+    padding: clamp(30px,5vw,60px) clamp(20px,5vw,40px);
+  }
+
+  .agents-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(20px,5vw,60px);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .agent-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .agent-orb {
+    width: clamp(60px,10vw,90px);
+    height: clamp(60px,10vw,90px);
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--surface-2), var(--surface));
+    border: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: orb-pulse 2.2s ease-in-out infinite;
+  }
+
+  .agent-node:nth-child(3) .agent-orb { animation-delay: 0.6s; }
+  .agent-node:nth-child(5) .agent-orb { animation-delay: 1.2s; }
+
+  @keyframes orb-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--gold-glow), 0 0 20px var(--gold-dim); }
+    50% { box-shadow: 0 0 0 12px transparent, 0 0 40px var(--gold-glow); }
+  }
+
+  .agent-orb svg { width: 40%; height: 40%; color: var(--gold); }
+
+  .agent-line {
+    width: clamp(30px,5vw,60px);
+    height: 1px;
+    position: relative;
+    overflow: hidden;
+    background: var(--border);
+    margin-bottom: 24px;
+  }
+
+  .agent-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: line-flow 2s linear infinite;
+  }
+
+  @keyframes line-flow { to { left: 200%; } }
+
+  .agent-label {
+    font-size: clamp(10px,1.2vw,12px);
+    color: var(--text-muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .processing-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(24px,4.5vw,42px);
+    font-weight: 600;
+    color: var(--gold);
+    text-align: center;
+  }
+
+  .processing-sub {
+    font-size: clamp(13px,1.6vw,16px);
+    color: var(--text-muted);
+    text-align: center;
+    min-height: 1.6em;
+    transition: opacity 0.4s ease;
+  }
+
+  .dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: dot-bounce 1.4s ease-in-out infinite;
+    opacity: 0.3;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes dot-bounce {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(1); }
+    40% { opacity: 1; transform: scale(1.4); }
+  }
+
+  /* ── Screen 4: Results ── */
+  #screen-4 .screen-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: clamp(30px,4vw,50px) clamp(20px,5vw,40px) 120px;
+  }
+
+  .results-header {
+    margin-bottom: clamp(30px,4vw,50px);
+  }
+
+  .results-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(30px,5vw,52px);
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .results-sub {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text-muted);
+    max-width: 600px;
+  }
+
+  .problem-section { margin-bottom: clamp(30px,4vw,50px); }
+
+  .problem-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: clamp(12px,2vw,18px) clamp(16px,2.5vw,24px);
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    cursor: pointer;
+    transition: background 0.25s ease;
+    margin-bottom: clamp(12px,2vw,20px);
+    user-select: none;
+  }
+
+  .problem-header:hover { background: var(--surface-2); }
+
+  .problem-header-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(20px,3vw,28px);
+    font-weight: 700;
+    color: var(--gold);
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .problem-header-text {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text);
+    font-weight: 400;
+    flex: 1;
+  }
+
+  .collapse-icon {
+    color: var(--text-muted);
+    font-size: 18px;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .problem-header.collapsed .collapse-icon { transform: rotate(-90deg); }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--gap);
+    transition: all 0.3s ease;
+  }
+
+  .cards-grid.collapsed { display: none; }
+
+  /* ── Card ── */
+  .use-case-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--gold);
+    border-radius: var(--radius);
+    padding: clamp(16px,2.5vw,24px);
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+  }
+
+  .use-case-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(200,168,75,0.12);
+    border-color: var(--gold);
+    border-top-color: var(--gold-light);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .priority-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .priority-pill {
+    font-size: clamp(10px,1.1vw,11px);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .priority-pill.p1 { background: rgba(200,168,75,0.15); color: var(--p1); border: 1px solid rgba(200,168,75,0.3); }
+  .priority-pill.p2 { background: rgba(158,163,184,0.12); color: var(--p2); border: 1px solid rgba(158,163,184,0.25); }
+  .priority-pill.p3 { background: rgba(139,107,79,0.12); color: var(--p3); border: 1px solid rgba(139,107,79,0.25); }
+
+  .priority-controls { display: flex; flex-direction: column; gap: 2px; }
+
+  .prio-btn {
+    width: 20px;
+    height: 18px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    line-height: 1;
+  }
+
+  .prio-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .prio-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  .card-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(16px,2.2vw,20px);
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .card-summary {
+    font-size: clamp(12px,1.3vw,13px);
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  .card-link {
+    font-size: clamp(11px,1.3vw,13px);
+    color: var(--gold);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    transition: gap 0.2s ease;
+  }
+
+  .card-link:hover { gap: 8px; }
+
+  /* ── Modal ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(7,11,20,0.88);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px,3vw,30px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-backdrop.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: clamp(12px,2vw,20px);
+    max-width: 720px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.35s ease;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+
+  .modal-backdrop.open .modal-panel { transform: translateY(0); }
+
+  .modal-header {
+    padding: clamp(20px,3vw,32px) clamp(20px,3vw,32px) clamp(14px,2vw,20px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .modal-header-left { flex: 1; }
+
+  .modal-problem-label {
+    font-size: clamp(10px,1.2vw,12px);
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(22px,3.5vw,34px);
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .modal-close-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .modal-robot-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .modal-robot-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  .modal-robot-btn svg { width: 18px; height: 18px; }
+
+  .modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .modal-close:hover { border-color: #ff4444; color: #ff4444; }
+
+  .modal-body {
+    padding: clamp(20px,3vw,32px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(20px,3vw,30px);
+  }
+
+  .modal-section {}
+
+  .modal-section-label {
+    font-size: clamp(10px,1.2vw,11px);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding-left: 12px;
+    border-left: 2px solid var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .modal-section p {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text);
+    font-weight: 300;
+    line-height: 1.7;
+  }
+
+  .modal-section ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-section ul li {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text);
+    font-weight: 300;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.6;
+  }
+
+  .modal-section ul li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 11px;
+    top: 3px;
+  }
+
+  .modal-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: clamp(10px,2vw,16px);
+  }
+
+  .meta-item {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: clamp(12px,2vw,18px);
+  }
+
+  .meta-label {
+    font-size: clamp(9px,1.1vw,11px);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .meta-value {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .complexity-chip {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: clamp(12px,1.3vw,13px);
+    font-weight: 500;
+  }
+
+  .complexity-chip.Low { background: rgba(61,139,107,0.15); color: #5DB896; border: 1px solid rgba(61,139,107,0.3); }
+  .complexity-chip.Medium { background: rgba(184,134,42,0.15); color: #E4A83B; border: 1px solid rgba(184,134,42,0.3); }
+  .complexity-chip.High { background: rgba(139,61,61,0.15); color: #D96060; border: 1px solid rgba(139,61,61,0.3); }
+
+  /* Feedback */
+  .modal-feedback {
+    border-top: 1px solid var(--border);
+    padding-top: clamp(18px,2.5vw,24px);
+    display: flex;
+    align-items: center;
+    gap: clamp(14px,2vw,20px);
+    flex-wrap: wrap;
+  }
+
+  .feedback-label {
+    font-size: clamp(13px,1.5vw,15px);
+    color: var(--text-muted);
+    flex: 1;
+    min-width: 160px;
+  }
+
+  .feedback-btns { display: flex; gap: 10px; }
+
+  .feedback-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: clamp(10px,1.5vw,13px) clamp(16px,2.5vw,22px);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(12px,1.4vw,14px);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .feedback-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+  .feedback-btn.active-up {
+    background: rgba(200,168,75,0.12);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .feedback-btn.active-down {
+    background: rgba(185,74,74,0.1);
+    border-color: #B94A4A;
+    color: #D96060;
+  }
+
+  /* ── Guide Robot ── */
+  .guide-robot {
+    position: fixed;
+    bottom: clamp(20px,3vw,32px);
+    right: clamp(20px,3vw,32px);
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .guide-tooltip {
+    background: var(--surface-2);
+    border: 1px solid var(--gold);
+    border-radius: var(--radius);
+    padding: clamp(12px,2vw,18px) clamp(14px,2.5vw,20px);
+    max-width: clamp(220px,30vw,300px);
+    font-size: clamp(12px,1.4vw,13px);
+    color: var(--text);
+    line-height: 1.55;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    transform-origin: bottom right;
+    transform: scale(0.85);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative;
+  }
+
+  .guide-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 18px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--gold);
+  }
+
+  .guide-tooltip.visible { transform: scale(1); opacity: 1; pointer-events: all; }
+
+  .guide-btn {
+    width: clamp(48px,6vw,58px);
+    height: clamp(48px,6vw,58px);
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1.5px solid var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(200,168,75,0.2);
+    transition: all 0.25s ease;
+    animation: guide-pulse 3s ease-in-out 2s infinite;
+  }
+
+  .guide-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(200,168,75,0.35); }
+  .guide-btn.clicked { animation: none; }
+
+  @keyframes guide-pulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(200,168,75,0.2); }
+    50% { box-shadow: 0 4px 28px rgba(200,168,75,0.5); }
+  }
+
+  .guide-btn svg { width: 55%; height: 55%; }
+
+  /* ── Modal robot tooltip ── */
+  .modal-robot-tip {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: clamp(11px,1.2vw,12px);
+    color: var(--text);
+    max-width: 220px;
+    line-height: 1.45;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    z-index: 20;
+    display: none;
+  }
+
+  .modal-robot-tip.visible { display: block; }
+
+  /* ── Utility ── */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 1 — INTRODUCTION
+═══════════════════════════════════════ -->
+<div id="screen-1" class="screen active">
+  <div class="header">
+    <div class="logo">Strategy <span>Unbounded</span></div>
+    <div class="step-indicator">Step <span class="step-num" id="step-num-1">1</span> of 4</div>
+  </div>
+  <div class="screen-inner">
+    <div class="intro-layout">
+
+      <div class="avatar-col">
+        <div class="avatar-ring">
+          <div class="avatar-circle">
+            <img id="avatar-img" src="" alt="AI Guide" onerror="this.style.display='none'">
+            <svg class="avatar-svg-fallback" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="28" r="16" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 72c0-15.464 12.536-28 28-28s28 12.536 28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="40" cy="28" r="6" fill="currentColor" opacity="0.3"/>
+            </svg>
+          </div>
+        </div>
+        <div class="avatar-label">AI Strategy Guide</div>
+      </div>
+
+      <div class="bubble-col">
+        <div class="speech-bubble">
+          <div class="bubble-text" id="bubble-text"><span class="cursor-blink"></span></div>
+        </div>
+        <button class="btn-begin" id="btn-begin" onclick="goToScreen2()">Begin Activity</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 2 — PROBLEM INPUT
+═══════════════════════════════════════ -->
+<div id="screen-2" class="screen">
+  <div class="header">
+    <div class="logo">Strategy <span>Unbounded</span></div>
+    <div class="step-indicator">Step <span class="step-num">2</span> of 4</div>
+  </div>
+  <div class="screen-inner">
+    <h1 class="screen-title">Define Your Challenges</h1>
+    <p class="screen-subtitle">Describe five problems your organisation is currently facing. Be as specific as possible.</p>
+
+    <div class="problem-list" id="problem-list"></div>
+
+    <button class="btn-submit" id="btn-submit" onclick="submitProblems()">
+      Analyse with AI
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 3 — PROCESSING
+═══════════════════════════════════════ -->
+<div id="screen-3" class="screen">
+  <div class="screen-inner">
+    <div class="agents-row">
+      <div class="agent-node">
+        <div class="agent-orb">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="8" y="12" width="24" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="20" r="3" fill="currentColor"/><circle cx="25" cy="20" r="3" fill="currentColor"/><line x1="20" y1="12" x2="20" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="6" r="2" fill="currentColor"/></svg>
+        </div>
+        <div class="agent-label">Agent 01</div>
+      </div>
+      <div class="agent-line"></div>
+      <div class="agent-node">
+        <div class="agent-orb">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="8" y="12" width="24" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="20" r="3" fill="currentColor"/><circle cx="25" cy="20" r="3" fill="currentColor"/><line x1="20" y1="12" x2="20" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="6" r="2" fill="currentColor"/></svg>
+        </div>
+        <div class="agent-label">Agent 02</div>
+      </div>
+      <div class="agent-line"></div>
+      <div class="agent-node">
+        <div class="agent-orb">
+          <svg viewBox="0 0 40 40" fill="none"><rect x="8" y="12" width="24" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="20" r="3" fill="currentColor"/><circle cx="25" cy="20" r="3" fill="currentColor"/><line x1="20" y1="12" x2="20" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="6" r="2" fill="currentColor"/></svg>
+        </div>
+        <div class="agent-label">Agent 03</div>
+      </div>
+    </div>
+    <div class="processing-title">Our AI agents are brainstorming...</div>
+    <div class="processing-sub" id="processing-sub">Analysing your challenges…</div>
+    <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SCREEN 4 — RESULTS
+═══════════════════════════════════════ -->
+<div id="screen-4" class="screen">
+  <div class="header">
+    <div class="logo">Strategy <span>Unbounded</span></div>
+    <div class="step-indicator">Step <span class="step-num">4</span> of 4</div>
+  </div>
+  <div class="screen-inner">
+    <div class="results-header">
+      <h1 class="results-title">AI-Generated Use Cases</h1>
+      <p class="results-sub">Our agents identified the following opportunities. Click any card for full details. Adjust priorities with the arrows.</p>
+    </div>
+    <div id="results-container"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     CARD DETAIL MODAL
+═══════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="handleBackdropClick(event)">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-problem-label" id="modal-problem-label">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M6 4v2.5L7.5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span id="modal-problem-text"></span>
+        </div>
+        <div class="modal-title" id="modal-title"></div>
+      </div>
+      <div class="modal-close-area">
+        <div style="position:relative;">
+          <button class="modal-robot-btn" id="modal-robot-btn" onclick="toggleModalRobotTip()" title="Guide">
+            <svg viewBox="0 0 40 40" fill="none"><rect x="8" y="12" width="24" height="16" rx="4" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="20" r="3" fill="currentColor"/><circle cx="25" cy="20" r="3" fill="currentColor"/><line x1="20" y1="12" x2="20" y2="7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="20" cy="6" r="2" fill="currentColor"/></svg>
+          </button>
+          <div class="modal-robot-tip" id="modal-robot-tip">Read through each section. Use thumbs to flag ideas worth exploring further.</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-label">Description</div>
+        <p id="modal-description"></p>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">How It Works</div>
+        <ul id="modal-how-it-works"></ul>
+      </div>
+      <div class="modal-meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Data Required</div>
+          <div class="meta-value" id="modal-data"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Time to Implement</div>
+          <div class="meta-value" id="modal-time"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Complexity</div>
+          <div class="meta-value" id="modal-complexity"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Estimated Cost &amp; ROI</div>
+          <div class="meta-value" id="modal-roi"></div>
+        </div>
+      </div>
+      <div class="modal-feedback">
+        <div class="feedback-label">Is this use case relevant to your business?</div>
+        <div class="feedback-btns">
+          <button class="feedback-btn" id="btn-thumbs-up" onclick="setFeedback('up')">👍 Interesting</button>
+          <button class="feedback-btn" id="btn-thumbs-down" onclick="setFeedback('down')">👎 Not for us</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     GUIDE ROBOT (fixed)
+═══════════════════════════════════════ -->
+<div class="guide-robot" id="guide-robot">
+  <div class="guide-tooltip" id="guide-tooltip"></div>
+  <button class="guide-btn" id="guide-btn" onclick="toggleGuide()">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="13" width="24" height="17" rx="4" stroke="currentColor" stroke-width="2"/>
+      <circle cx="15.5" cy="21.5" r="3" fill="currentColor"/>
+      <circle cx="24.5" cy="21.5" r="3" fill="currentColor"/>
+      <path d="M14 28.5 Q19.5 32 26 28.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="20" y1="13" x2="20" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="20" cy="6" r="2.5" fill="currentColor"/>
+      <line x1="8" y1="22" x2="4" y2="25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="32" y1="22" x2="36" y2="25" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const API_KEY  = 'YOUR_OPENAI_API_KEY';
+const ENDPOINT = 'YOUR_OPENAI_ENDPOINT'; // e.g. https://api.openai.com/v1/chat/completions
+
+// ─── STATE ────────────────────────────────────────────────
+let currentScreen  = 1;
+let problems       = [];
+let useCases       = [];
+let priorities     = {};   // id → 1|2|3
+let feedbackMap    = {};   // id → 'up'|'down'|null
+let activeModalId  = null;
+let guideOpen      = false;
+let guideClicked   = false;
+let modalRobotOpen = false;
+
+const GUIDE_TEXTS = {
+  2: 'Be specific about each problem. Think about pain points that slow down teams, frustrate customers, or cost the business money.',
+  4: 'Click any card to explore it in detail. Use ▲ and ▼ to adjust its priority ranking.'
+};
+
+// ─── MOCK DATA ────────────────────────────────────────────
+const MOCK_PROBLEMS = [
+  'Manual invoice processing takes 3 days and is error-prone',
+  'High customer churn rate with no early warning system',
+  'Supply chain disruptions causing stock-outs and delivery delays',
+  'Slow recruitment process losing top candidates to competitors',
+  'Regulatory compliance monitoring is done entirely by hand'
+];
+
+const MOCK_USE_CASES = [
+  { id:0,  problem_index:0, title:'Intelligent Invoice Processing',  summary:'Automate invoice extraction, validation, and routing using computer vision and NLP.',          description:'Deploy an AI system that reads invoices from any format — PDF, scan, or email — extracts key fields automatically, and routes them for approval. Errors that took days to catch are flagged in seconds, reducing processing time by up to 80%.', how_it_works:['OCR ingestion converts scanned documents to structured data','NLP models extract vendor, amount, date, and line items','Rules engine validates against ERP purchase orders','Auto-routing sends to the correct approver with anomaly flags'], data_required:'Historical invoices, ERP purchase orders, vendor master data', time_to_implement:'3–4 months for MVP', complexity:'Medium', cost_roi:'£70k build cost · 3× ROI within 12 months', priority:1 },
+  { id:1,  problem_index:0, title:'Accounts Payable Automation',     summary:'End-to-end AP workflow automation reducing manual touchpoints by 90%.',                       description:'An intelligent AP platform that handles the full lifecycle from invoice receipt to payment approval. Machine learning continuously improves matching accuracy and learns your approval patterns over time.', how_it_works:['Three-way matching (invoice, PO, receipt) powered by ML','Duplicate detection using semantic similarity','Automated journal entry creation in ERP','Dashboard for AP team with exception-only workflow'], data_required:'ERP data, payment records, vendor contracts', time_to_implement:'4–6 months', complexity:'High', cost_roi:'£120k build · 4× ROI within 18 months', priority:2 },
+  { id:2,  problem_index:0, title:'Vendor Risk Scoring AI',          summary:'Assess and monitor financial and operational risk across your supplier base in real time.',     description:'An AI model that continuously scores each vendor on financial health, delivery performance, and compliance risk using both internal data and public signals. Procurement teams receive proactive alerts before disruptions occur.', how_it_works:['Ingests payment history, delivery KPIs, and financial filings','NLP scans news and regulatory databases for vendor signals','Risk score updated daily with explainable AI output','Integrated alerts push into Slack or email workflows'], data_required:'Vendor payment records, delivery data, public company filings', time_to_implement:'2–3 months', complexity:'Low', cost_roi:'£40k build · 2.5× ROI within 12 months', priority:3 },
+
+  { id:3,  problem_index:1, title:'Customer Churn Prediction',       summary:'Identify at-risk customers weeks before they leave and trigger retention interventions.',        description:'A machine learning model trained on customer behaviour, support interactions, and product usage signals to predict churn probability. Customer success teams are alerted with a prioritised list of at-risk accounts and recommended actions.', how_it_works:['Feature engineering from CRM, product usage, and support data','Gradient-boosted model trained on 24-month churn history','Weekly scoring run produces ranked at-risk customer list','Playbook recommendations generated per risk segment'], data_required:'CRM data, product usage logs, support tickets, transaction history', time_to_implement:'2–4 months', complexity:'Medium', cost_roi:'£60k build · 5× ROI through retained revenue', priority:1 },
+  { id:4,  problem_index:1, title:'AI Support Agent',                summary:'Resolve 60% of customer queries automatically with a context-aware conversational AI.',          description:'A large-language-model-powered support agent that handles Tier-1 queries, accesses your knowledge base in real time, and escalates to human agents with full context when needed. Customer satisfaction scores typically rise as wait times fall.', how_it_works:['LLM fine-tuned on your product documentation and past tickets','Retrieval-augmented generation grounds answers in live data','Seamless handoff to human agent with conversation summary','Continuous learning loop from agent-resolved tickets'], data_required:'Support ticket history, knowledge base articles, product FAQs', time_to_implement:'6–10 weeks', complexity:'Low', cost_roi:'£35k build · 4× ROI within 9 months', priority:2 },
+  { id:5,  problem_index:1, title:'Sentiment Analysis Pipeline',     summary:'Track customer sentiment across every channel in real time and surface emerging issues early.', description:'A multi-channel sentiment engine that processes emails, reviews, chat transcripts, and social mentions to produce a live sentiment score by product, region, and cohort. Product and CX teams gain early visibility into experience issues before they escalate.', how_it_works:['NLP sentiment classifier fine-tuned on domain language','Aggregation layer joins data from all channels into one stream','Trend alerts notify teams when sentiment drops 10%+ week-on-week','Executive dashboard with drill-down by segment'], data_required:'Email logs, chat transcripts, review feeds, social API data', time_to_implement:'6–8 weeks', complexity:'Low', cost_roi:'£28k build · ongoing brand protection value', priority:3 },
+
+  { id:6,  problem_index:2, title:'Supply Chain Demand Forecasting', summary:'Predict demand 12 weeks ahead with 20–30% higher accuracy than traditional methods.',          description:'An ML forecasting system that combines internal sales data with external signals — weather, macroeconomics, and competitor activity — to produce granular demand forecasts at the SKU and location level. Planners receive uncertainty ranges, not just point estimates.', how_it_works:['Time-series models trained on 3 years of sales history','External signal integration via API (weather, commodity prices)','Hierarchical forecasting from SKU to category to total','What-if scenario modelling for promotional planning'], data_required:'3-year sales history, SKU master data, promotional calendar, external feeds', time_to_implement:'4–5 months', complexity:'High', cost_roi:'£100k build · 6× ROI via reduced stock-outs and overstock', priority:1 },
+  { id:7,  problem_index:2, title:'Inventory Anomaly Detection',     summary:'Automatically flag unusual stock movements and prevent shrinkage or supply failures.',          description:'A real-time anomaly detection model monitors inventory movements across all locations, flagging deviations from expected patterns. Warehouse teams receive instant alerts with probable cause and recommended action, reducing investigation time from hours to minutes.', how_it_works:['Statistical and ML baselines established per SKU and location','Real-time streaming pipeline from WMS data','Severity-scored alerts with explainability (e.g. "40% above 30-day average")','Integration with reorder and replenishment workflows'], data_required:'WMS transaction logs, historical stock levels, order data', time_to_implement:'8–10 weeks', complexity:'Medium', cost_roi:'£45k build · 3× ROI via shrinkage reduction', priority:2 },
+  { id:8,  problem_index:2, title:'Logistics Route Optimisation',    summary:'Reduce last-mile delivery cost by up to 25% using AI-powered dynamic routing.',               description:'A route optimisation engine that accounts for real-time traffic, driver availability, vehicle capacity, and delivery time windows to compute optimal routes dynamically. Routes re-optimise automatically when conditions change mid-day.', how_it_works:['Constraint-based optimisation solves routing as a VRP daily','Live traffic API integration updates routes every 15 minutes','Driver app integration pushes route updates in real time','Reporting layer tracks cost-per-delivery and on-time rate'], data_required:'Delivery orders, vehicle capacity data, driver schedules, traffic API', time_to_implement:'3–5 months', complexity:'Medium', cost_roi:'£80k build · 3.5× ROI within 12 months', priority:3 },
+
+  { id:9,  problem_index:3, title:'AI Candidate Screening',          summary:'Screen 10× more applicants in half the time while reducing unconscious bias.',                   description:'An AI screening system that evaluates CVs against role requirements, scores candidates on relevant experience, and produces a ranked shortlist with explainable scoring. Recruiters focus only on top candidates, cutting time-to-shortlist from two weeks to two days.', how_it_works:['NLP parsing extracts skills, tenure, and experience from CVs','Role-specific scoring model trained on past successful hires','Bias mitigation layer removes protected characteristics from ranking','Recruiter dashboard with side-by-side candidate comparison'], data_required:'Historical CVs, job descriptions, past hire outcome data', time_to_implement:'2–3 months', complexity:'Medium', cost_roi:'£55k build · 4× ROI through recruiter time savings', priority:1 },
+  { id:10, problem_index:3, title:'Employee Productivity Coach',     summary:'Provide each employee with a personalised AI assistant that surfaces relevant knowledge instantly.', description:'An AI productivity layer integrated into your existing tools (Teams, Slack, email) that answers employee questions using your internal knowledge base, summarises meetings, drafts documents, and surfaces the right information at the right moment.', how_it_works:['LLM connected to SharePoint, Confluence, and internal wikis','Meeting transcription and action item extraction','Context-aware suggestions based on calendar and current task','Admin dashboard tracks adoption and knowledge gap analytics'], data_required:'Internal documentation, SharePoint/Confluence access, calendar data', time_to_implement:'6–8 weeks', complexity:'Low', cost_roi:'£30k build · 2.5× ROI through productivity uplift', priority:2 },
+  { id:11, problem_index:3, title:'Knowledge Graph Assistant',       summary:'Map and surface institutional knowledge so expertise never walks out the door.',                   description:'A knowledge graph built from internal documents, emails, and project history that makes your organisation\'s expertise searchable and discoverable. New joiners onboard faster; experienced staff find answers in seconds instead of chasing colleagues.', how_it_works:['Entity extraction builds a graph of people, projects, and concepts','Semantic search enables natural-language queries across all sources','Expertise mapping identifies who knows what across the org','Regular graph refresh keeps knowledge current as projects close'], data_required:'Internal documents, email metadata, project records, org chart', time_to_implement:'4–6 months', complexity:'High', cost_roi:'£90k build · 3× ROI via onboarding and knowledge retention', priority:3 },
+
+  { id:12, problem_index:4, title:'Real-Time Compliance Monitor',    summary:'Replace manual compliance checks with continuous AI-powered monitoring across all operations.',   description:'An AI system that continuously checks transactions, communications, and processes against your regulatory ruleset, flagging non-compliance in real time. Compliance teams shift from reactive fire-fighting to proactive risk management.', how_it_works:['Rule engine translates regulatory requirements into machine-checkable logic','NLP monitors communications for policy violations','Daily transaction sweep across all business units','Audit trail auto-generated for each flagged item with context'], data_required:'Transaction records, internal communications, regulatory rulebooks', time_to_implement:'4–6 months', complexity:'High', cost_roi:'£110k build · 5× ROI via fine avoidance and audit cost reduction', priority:1 },
+  { id:13, problem_index:4, title:'Financial Risk Scoring',          summary:'Score and monitor financial exposure across counterparties and products in real time.',             description:'A risk scoring platform that aggregates market data, counterparty financials, and internal exposure data to produce a live risk score for every position. Risk teams gain a single, consistent view of exposure with explainable drivers for each score.', how_it_works:['Factor model combines market, credit, and operational risk signals','Monte Carlo simulation generates exposure distributions','Alert thresholds trigger notifications when risk limits approach','Executive risk dashboard with drill-down to individual positions'], data_required:'Market data feeds, counterparty financials, internal position data', time_to_implement:'5–7 months', complexity:'High', cost_roi:'£130k build · 4× ROI via risk cost reduction', priority:2 },
+  { id:14, problem_index:4, title:'Revenue Optimisation Engine',     summary:'Use AI to dynamically price products and identify untapped revenue opportunities.',               description:'A pricing intelligence system that analyses demand elasticity, competitor pricing, and customer segments to recommend optimal price points in real time. Commercial teams capture additional margin without manual analysis cycles.', how_it_works:['Demand elasticity modelled from historical transaction data','Competitor price monitoring via web scraping pipeline','Segment-level pricing recommendations generated daily','A/B testing framework validates price changes before full rollout'], data_required:'Transaction history, product catalogue, competitor price data, customer segments', time_to_implement:'3–5 months', complexity:'Medium', cost_roi:'£75k build · 4× ROI via margin expansion', priority:3 }
+];
+
+// ─── NAVIGATION ───────────────────────────────────────────
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + n);
+  if (el) el.classList.add('active');
+  currentScreen = n;
+  closeGuide();
+  guideOpen = false;
+}
+
+// ─── SCREEN 1: TYPEWRITER ─────────────────────────────────
+const INTRO_SCRIPT = "Welcome to Strategy Unbounded. Your task today is to identify five real problems your organisation faces — challenges, inefficiencies, risks, or opportunities being missed. Once you've shared those problems, our AI agents will brainstorm powerful AI-driven solutions for each one. Take a moment to reflect. When you're ready, click below to begin.";
+
+function startTypewriter(text, el, callback) {
+  const words = text.split(' ');
+  let i = 0;
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor-blink';
+  el.innerHTML = '';
+  el.appendChild(cursor);
+
+  function next() {
+    if (i >= words.length) {
+      setTimeout(() => {
+        cursor.remove();
+        if (callback) callback();
+      }, 400);
+      return;
+    }
+    const word = document.createTextNode(words[i] + (i < words.length - 1 ? ' ' : ''));
+    el.insertBefore(word, cursor);
+    i++;
+    setTimeout(next, 60 + Math.random() * 40);
+  }
+  setTimeout(next, 600);
+}
+
+function goToScreen2() { showScreen(2); buildProblemInputs(); updateGuideText(); }
+
+// ─── SCREEN 2: PROBLEM INPUT ──────────────────────────────
+function buildProblemInputs() {
+  if (document.querySelectorAll('#problem-list .problem-row').length > 0) return;
+  const list = document.getElementById('problem-list');
+  list.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const num = String(i + 1).padStart(2, '0');
+    list.innerHTML += `
+      <div class="problem-row">
+        <div class="problem-num">${num}</div>
+        <div class="problem-field">
+          <textarea id="prob-${i}" maxlength="300" rows="2"
+            placeholder="Describe problem ${i+1}…"
+            oninput="onProblemInput()"
+          ></textarea>
+          <div class="char-count" id="cc-${i}">0 / 300</div>
+        </div>
+      </div>`;
+  }
+}
+
+function onProblemInput() {
+  let allReady = true;
+  for (let i = 0; i < 5; i++) {
+    const ta = document.getElementById('prob-' + i);
+    const cc = document.getElementById('cc-' + i);
+    if (!ta) continue;
+    const len = ta.value.length;
+    cc.textContent = len + ' / 300';
+    cc.classList.toggle('ready', len >= 10);
+    if (len < 10) allReady = false;
+  }
+  const btn = document.getElementById('btn-submit');
+  btn.classList.toggle('active', allReady);
+}
+
+function submitProblems() {
+  const btn = document.getElementById('btn-submit');
+  if (!btn.classList.contains('active')) return;
+  problems = [];
+  for (let i = 0; i < 5; i++) {
+    problems.push(document.getElementById('prob-' + i).value.trim());
+  }
+  showScreen(3);
+  startProcessing();
+}
+
+// ─── SCREEN 3: PROCESSING ─────────────────────────────────
+const PROCESSING_MSGS = [
+  'Analysing your challenges…',
+  'Generating AI use cases…',
+  'Ranking by business impact…',
+  'Almost ready…'
+];
+
+function startProcessing() {
+  let mi = 0;
+  const subEl = document.getElementById('processing-sub');
+  const cycleInterval = setInterval(() => {
+    mi = (mi + 1) % PROCESSING_MSGS.length;
+    subEl.style.opacity = '0';
+    setTimeout(() => { subEl.textContent = PROCESSING_MSGS[mi]; subEl.style.opacity = '1'; }, 300);
+  }, 3000);
+
+  callLLM(problems).then(data => {
+    clearInterval(cycleInterval);
+    useCases = data;
+    data.forEach(uc => {
+      priorities[uc.id] = uc.priority;
+      feedbackMap[uc.id] = null;
+    });
+    showScreen(4);
+    renderResults(useCases);
+    updateGuideText();
+  });
+}
+
+async function callLLM(probs) {
+  if (API_KEY === 'YOUR_OPENAI_API_KEY') return useMockData();
+  try {
+    const systemPrompt = `You are a strategic AI consultant. Given 5 company problems, generate exactly 3 AI-powered use cases per problem (15 total). Return a JSON object with key "use_cases" containing an array of 15 objects. Each object must have: id (0-14), problem_index (0-4), title (string), summary (one sentence), description (2-3 sentences), how_it_works (array of 4 bullet strings), data_required (string), time_to_implement (string), complexity ("Low"|"Medium"|"High"), cost_roi (string), priority (1, 2, or 3 — assign 1/2/3 sequentially for each problem's 3 use cases based on expected impact).`;
+    const userContent = 'Here are 5 company problems:\n' + probs.map((p, i) => `${i+1}. ${p}`).join('\n') + '\n\nGenerate 3 AI use cases for each problem.';
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userContent }], response_format: { type: 'json_object' } })
+    });
+    const json = await res.json();
+    const parsed = JSON.parse(json.choices[0].message.content);
+    return parsed.use_cases;
+  } catch (e) {
+    console.warn('LLM call failed, using mock data:', e);
+    return useMockData();
+  }
+}
+
+function useMockData() {
+  return new Promise(resolve => setTimeout(() => {
+    const data = MOCK_USE_CASES.map((uc, i) => ({ ...uc, problem_index: uc.problem_index }));
+    if (problems.length === 5) data.forEach(uc => {});
+    const withProblems = data.map(uc => ({
+      ...uc,
+      problem_text: problems[uc.problem_index] || MOCK_PROBLEMS[uc.problem_index]
+    }));
+    resolve(withProblems);
+  }, 3800));
+}
+
+// ─── SCREEN 4: RENDER RESULTS ────────────────────────────
+function renderResults(data) {
+  const container = document.getElementById('results-container');
+  container.innerHTML = '';
+  for (let pi = 0; pi < 5; pi++) {
+    const probCases = data.filter(uc => uc.problem_index === pi);
+    const probText  = probCases[0]?.problem_text || problems[pi] || MOCK_PROBLEMS[pi];
+    const truncated = probText.length > 80 ? probText.slice(0, 80) + '…' : probText;
+    const section   = document.createElement('div');
+    section.className = 'problem-section';
+    section.innerHTML = `
+      <div class="problem-header" data-pi="${pi}" onclick="toggleSection(this)">
+        <div class="problem-header-num">${String(pi+1).padStart(2,'0')}</div>
+        <div class="problem-header-text">${truncated}</div>
+        <div class="collapse-icon">▾</div>
+      </div>
+      <div class="cards-grid" id="cards-grid-${pi}">
+        ${probCases.map(uc => cardHTML(uc)).join('')}
+      </div>`;
+    container.appendChild(section);
+  }
+}
+
+function cardHTML(uc) {
+  const p = priorities[uc.id] || uc.priority;
+  const pClass  = ['','p1','p2','p3'][p];
+  const pLabel  = ['','Priority 1','Priority 2','Priority 3'][p];
+  return `
+    <div class="use-case-card" id="card-${uc.id}" onclick="openModal(${uc.id})">
+      <div class="card-top">
+        <div class="card-title">${uc.title}</div>
+        <div class="priority-badge">
+          <div class="priority-controls">
+            <button class="prio-btn" onclick="changePriority(event,${uc.id},-1)" ${p<=1?'disabled':''} title="Raise priority">▲</button>
+            <button class="prio-btn" onclick="changePriority(event,${uc.id},1)"  ${p>=3?'disabled':''} title="Lower priority">▼</button>
+          </div>
+          <div class="priority-pill ${pClass}" id="pill-${uc.id}">${pLabel}</div>
+        </div>
+      </div>
+      <div class="card-summary">${uc.summary}</div>
+      <div class="card-link">View Details <span>→</span></div>
+    </div>`;
+}
+
+function toggleSection(header) {
+  const pi   = header.dataset.pi;
+  const grid = document.getElementById('cards-grid-' + pi);
+  header.classList.toggle('collapsed');
+  grid.classList.toggle('collapsed');
+}
+
+// ─── PRIORITY VOTING ──────────────────────────────────────
+function changePriority(e, id, delta) {
+  e.stopPropagation();
+  const current = priorities[id] || 1;
+  const next    = Math.min(3, Math.max(1, current + delta));
+  if (next === current) return;
+  priorities[id] = next;
+  const card     = document.getElementById('card-' + id);
+  if (!card) return;
+  const pill     = card.querySelector('.priority-pill');
+  const pClass   = ['','p1','p2','p3'][next];
+  const pLabel   = ['','Priority 1','Priority 2','Priority 3'][next];
+  pill.className = 'priority-pill ' + pClass;
+  pill.textContent = pLabel;
+  const btns = card.querySelectorAll('.prio-btn');
+  btns[0].disabled = (next <= 1);
+  btns[1].disabled = (next >= 3);
+}
+
+// ─── MODAL ────────────────────────────────────────────────
+function openModal(id) {
+  const uc = useCases.find(u => u.id === id);
+  if (!uc) return;
+  activeModalId = id;
+
+  document.getElementById('modal-title').textContent = uc.title;
+  const probText = uc.problem_text || problems[uc.problem_index] || MOCK_PROBLEMS[uc.problem_index] || '';
+  document.getElementById('modal-problem-text').textContent = 'Re: ' + (probText.length > 55 ? probText.slice(0,55)+'…' : probText);
+  document.getElementById('modal-description').textContent = uc.description;
+
+  const ul = document.getElementById('modal-how-it-works');
+  ul.innerHTML = uc.how_it_works.map(b => `<li>${b}</li>`).join('');
+
+  document.getElementById('modal-data').textContent    = uc.data_required;
+  document.getElementById('modal-time').textContent    = uc.time_to_implement;
+  document.getElementById('modal-roi').textContent     = uc.cost_roi;
+
+  const cxEl = document.getElementById('modal-complexity');
+  cxEl.innerHTML = `<span class="complexity-chip ${uc.complexity}">${uc.complexity}</span>`;
+
+  const fb = feedbackMap[id];
+  document.getElementById('btn-thumbs-up').className   = 'feedback-btn' + (fb === 'up'   ? ' active-up'   : '');
+  document.getElementById('btn-thumbs-down').className = 'feedback-btn' + (fb === 'down' ? ' active-down' : '');
+
+  const tip = document.getElementById('modal-robot-tip');
+  tip.classList.remove('visible');
+  modalRobotOpen = false;
+
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  activeModalId = null;
+}
+
+function handleBackdropClick(e) {
+  if (e.target.id === 'modal-backdrop') closeModal();
+}
+
+function setFeedback(type) {
+  if (activeModalId === null) return;
+  const current = feedbackMap[activeModalId];
+  feedbackMap[activeModalId] = current === type ? null : type;
+  const fb = feedbackMap[activeModalId];
+  document.getElementById('btn-thumbs-up').className   = 'feedback-btn' + (fb === 'up'   ? ' active-up'   : '');
+  document.getElementById('btn-thumbs-down').className = 'feedback-btn' + (fb === 'down' ? ' active-down' : '');
+}
+
+function toggleModalRobotTip() {
+  modalRobotOpen = !modalRobotOpen;
+  document.getElementById('modal-robot-tip').classList.toggle('visible', modalRobotOpen);
+}
+
+// ─── GUIDE ROBOT ──────────────────────────────────────────
+function toggleGuide() {
+  guideOpen = !guideOpen;
+  document.getElementById('guide-tooltip').classList.toggle('visible', guideOpen);
+  if (!guideClicked) {
+    guideClicked = true;
+    document.getElementById('guide-btn').classList.add('clicked');
+  }
+}
+
+function closeGuide() {
+  guideOpen = false;
+  document.getElementById('guide-tooltip').classList.remove('visible');
+}
+
+function updateGuideText() {
+  const text = GUIDE_TEXTS[currentScreen] || '';
+  document.getElementById('guide-tooltip').textContent = text;
+  document.getElementById('guide-robot').style.display = text ? 'flex' : 'none';
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeGuide(); }
+});
+
+// ─── INIT ─────────────────────────────────────────────────
+(function init() {
+  document.getElementById('guide-robot').style.display = 'none';
+
+  // Start typewriter
+  const bubbleEl = document.getElementById('bubble-text');
+  const beginBtn = document.getElementById('btn-begin');
+  startTypewriter(INTRO_SCRIPT, bubbleEl, () => {
+    beginBtn.classList.add('active');
+  });
+})();
+</script>
+</body>
+</html>

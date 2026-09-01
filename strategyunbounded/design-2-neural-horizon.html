@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy Unbounded — Neural Horizon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050508;
+  --surface: rgba(255,255,255,0.04);
+  --surface-border: rgba(124,58,237,0.3);
+  --violet: #7C3AED;
+  --cyan: #06B6D4;
+  --gradient: linear-gradient(135deg, #7C3AED, #06B6D4);
+  --text: #F8FAFC;
+  --muted: #94A3B8;
+  --glow-violet: rgba(124,58,237,0.4);
+  --glow-cyan: rgba(6,182,212,0.4);
+  --p1: #06B6D4;
+  --p2: #7C3AED;
+  --p3: #475569;
+  --radius: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Background ── */
+.bg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(124,58,237,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124,58,237,0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.orb {
+  position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+  filter: blur(80px); opacity: 0.08;
+}
+.orb-1 { width: 40vw; height: 40vw; background: var(--violet); top: -10%; left: -10%; }
+.orb-2 { width: 35vw; height: 35vw; background: var(--cyan); bottom: -10%; right: -5%; }
+.orb-3 { width: 25vw; height: 25vw; background: var(--violet); bottom: 20%; left: 30%; }
+
+/* ── Utility ── */
+.gradient-text {
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+}
+
+/* ── Layout ── */
+.screen {
+  display: none;
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: clamp(1rem, 3vw, 1.5rem) clamp(1.2rem, 5vw, 3rem);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(5,5,8,0.8);
+  backdrop-filter: blur(20px);
+}
+.logo {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.step-indicator {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  color: var(--muted);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+.step-indicator span { color: var(--cyan); }
+
+.screen-body {
+  flex: 1;
+  padding: clamp(2rem, 6vw, 4rem) clamp(1.2rem, 5vw, 3rem);
+}
+
+/* ── Screen 1 ── */
+#screen-1 .screen-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 5vw, 5rem);
+  flex-wrap: wrap;
+}
+
+.avatar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  flex: 0 0 auto;
+}
+
+.avatar-ring-wrapper {
+  position: relative;
+  width: clamp(160px, 22vw, 240px);
+  height: clamp(160px, 22vw, 240px);
+}
+
+.avatar-ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(from 0deg, var(--violet), var(--cyan), var(--violet));
+  animation: borderRotate 3s linear infinite;
+  z-index: 1;
+}
+
+@keyframes borderRotate {
+  to { transform: rotate(360deg); }
+}
+
+.avatar-glow {
+  position: absolute; inset: -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow-violet) 0%, transparent 70%);
+  animation: glowPulse 2.5s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+.avatar-inner {
+  position: relative; z-index: 2;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: #0D0D14;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  margin: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  top: 3px; left: 3px;
+  position: absolute;
+}
+
+.avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+
+.avatar-fallback {
+  width: 60%; height: 60%;
+  opacity: 0.7;
+}
+
+.avatar-label {
+  font-size: clamp(0.65rem, 1.2vw, 0.75rem);
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.bubble-column {
+  flex: 1 1 320px;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.speech-bubble {
+  position: relative;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  background: rgba(124,58,237,0.06);
+  backdrop-filter: blur(12px);
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -12px; top: 40px;
+  border: 6px solid transparent;
+  border-right-color: var(--surface-border);
+}
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  left: -10px; top: 41px;
+  border: 5px solid transparent;
+  border-right-color: rgba(124,58,237,0.06);
+}
+
+.bubble-text {
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  line-height: 1.75;
+  color: var(--text);
+  min-height: 6em;
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--cyan);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 0.8s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem);
+  border-radius: 50px;
+  font-family: inherit;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  font-weight: 600;
+  border: none; cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative; overflow: hidden;
+  width: fit-content;
+}
+
+.btn-primary:not(:disabled) {
+  background: var(--gradient);
+  color: #fff;
+  box-shadow: 0 4px 20px var(--glow-violet);
+}
+.btn-primary:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px var(--glow-violet), 0 4px 15px var(--glow-cyan);
+}
+.btn-primary:disabled {
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  cursor: not-allowed;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Screen 2 ── */
+.input-header {
+  max-width: 640px;
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+.input-header h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+.input-header p {
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  color: var(--cyan);
+  font-weight: 300;
+}
+
+.problems-form {
+  display: flex; flex-direction: column; gap: 1rem;
+  max-width: 800px;
+}
+
+.problem-row {
+  display: flex; align-items: flex-start; gap: 1rem;
+}
+
+.problem-num {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding-top: 0.9rem;
+  flex-shrink: 0;
+  min-width: 28px;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.textarea-wrap {
+  flex: 1;
+  position: relative;
+}
+
+.problem-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.875rem 1rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: clamp(0.85rem, 1.6vw, 0.95rem);
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.problem-textarea::placeholder { color: rgba(148,163,184,0.4); }
+.problem-textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.15);
+}
+.char-count {
+  text-align: right;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+.form-actions { margin-top: 0.5rem; }
+
+/* ── Screen 3 ── */
+#screen-3 .screen-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 4vw, 3rem);
+  text-align: center;
+}
+
+.agents-visual {
+  position: relative;
+  width: clamp(260px, 50vw, 420px);
+  height: clamp(120px, 20vw, 160px);
+  margin: 0 auto;
+}
+
+.agents-svg {
+  width: 100%; height: 100%;
+  overflow: visible;
+}
+
+.agent-node-circle {
+  fill: rgba(255,255,255,0.04);
+  stroke: var(--violet);
+  stroke-width: 1.5;
+}
+
+.agent-node-label {
+  fill: var(--muted);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-anchor: middle;
+}
+
+.agent-glow-circle {
+  fill: none;
+  stroke: var(--violet);
+  stroke-width: 8;
+  opacity: 0;
+  stroke-linecap: round;
+}
+
+.agent-node:nth-child(1) .agent-glow-circle { animation: nodeGlow 2s ease-in-out 0s infinite; }
+.agent-node:nth-child(2) .agent-glow-circle { animation: nodeGlow 2s ease-in-out 0.66s infinite; }
+.agent-node:nth-child(3) .agent-glow-circle { animation: nodeGlow 2s ease-in-out 1.33s infinite; }
+
+@keyframes nodeGlow {
+  0%,100% { opacity: 0; stroke-width: 8; }
+  50% { opacity: 0.6; stroke-width: 20; }
+}
+
+.flow-line {
+  stroke: url(#lineGrad);
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 8 6;
+  animation: flowDash 1.5s linear infinite;
+}
+@keyframes flowDash { to { stroke-dashoffset: -28; } }
+
+.processing-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.processing-status {
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  color: var(--muted);
+  min-height: 1.5em;
+  transition: opacity 0.3s;
+}
+
+.progress-bar-wrap {
+  width: clamp(240px, 50vw, 400px);
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient);
+  border-radius: 4px;
+  width: 0%;
+  animation: progressFill 4s ease-in-out forwards;
+}
+@keyframes progressFill { to { width: 95%; } }
+
+.processing-dots { display: flex; gap: 6px; justify-content: center; }
+.dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--gradient);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+
+/* ── Screen 4 ── */
+.results-header {
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+.results-header h1 {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+.results-header p {
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  color: var(--muted);
+}
+
+.problem-section { margin-bottom: clamp(2rem, 4vw, 3rem); }
+
+.problem-section-header {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  border-radius: 50px;
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.2);
+  cursor: pointer;
+  transition: background 0.2s;
+  width: fit-content;
+  max-width: 100%;
+}
+.problem-section-header:hover { background: rgba(124,58,237,0.14); }
+
+.problem-section-number {
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+  padding: 0.2rem 0.5rem; border-radius: 4px;
+  background: var(--gradient); color: #fff; flex-shrink: 0;
+}
+.problem-section-text {
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 60vw;
+}
+.collapse-arrow {
+  margin-left: auto; font-size: 0.75rem; color: var(--muted);
+  transition: transform 0.25s; flex-shrink: 0;
+}
+.problem-section.collapsed .collapse-arrow { transform: rotate(-90deg); }
+.problem-section.collapsed .cards-grid { display: none; }
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+/* ── Card ── */
+.card {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(124,58,237,0.25);
+  border-radius: var(--radius);
+  padding: clamp(1rem, 2vw, 1.5rem);
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  display: flex; flex-direction: column; gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--gradient);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 8px 30px var(--glow-violet), 0 2px 10px rgba(6,182,212,0.15);
+  border-color: rgba(124,58,237,0.6);
+}
+.card:hover::before { opacity: 1; }
+
+.card-top {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem;
+}
+.priority-group {
+  display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0;
+}
+.priority-badge {
+  font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem; border-radius: 20px; white-space: nowrap;
+}
+.priority-badge.p1 { background: rgba(6,182,212,0.2); color: var(--cyan); border: 1px solid rgba(6,182,212,0.4); }
+.priority-badge.p2 { background: rgba(124,58,237,0.2); color: #A78BFA; border: 1px solid rgba(124,58,237,0.4); }
+.priority-badge.p3 { background: rgba(71,85,105,0.3); color: #94A3B8; border: 1px solid rgba(71,85,105,0.5); }
+
+.priority-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px; padding: 2px 5px;
+  color: var(--muted); font-size: 0.7rem; cursor: pointer;
+  transition: all 0.15s; line-height: 1;
+}
+.priority-btn:hover:not(:disabled) { border-color: var(--cyan); color: var(--cyan); }
+.priority-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.card-title {
+  font-size: clamp(0.88rem, 1.6vw, 1rem);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.card-summary {
+  font-size: clamp(0.75rem, 1.4vw, 0.85rem);
+  color: var(--muted);
+  line-height: 1.5;
+  flex: 1;
+}
+.card-link {
+  font-size: 0.8rem; font-weight: 600;
+  color: var(--cyan); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: auto;
+  transition: gap 0.2s;
+}
+.card:hover .card-link { gap: 8px; }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(5,5,8,0.85);
+  backdrop-filter: blur(6px);
+  align-items: center; justify-content: center;
+  padding: clamp(0.5rem, 3vw, 2rem);
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.open { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-panel {
+  background: #0A0A12;
+  border: 1px solid rgba(124,58,237,0.35);
+  border-radius: 20px;
+  width: 100%; max-width: 720px;
+  max-height: 90vh; overflow-y: auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  position: relative;
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted); font-size: 1.1rem;
+  width: 36px; height: 36px; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.modal-close:hover { background: rgba(124,58,237,0.2); color: var(--text); border-color: var(--violet); }
+
+.modal-guide {
+  position: absolute; top: 1rem; right: 3.5rem;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.4);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  transition: background 0.2s;
+  color: var(--violet);
+}
+.modal-guide:hover { background: rgba(124,58,237,0.25); }
+
+.modal-header { margin-bottom: 1.5rem; padding-right: 5rem; }
+.modal-title {
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 700; letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+.modal-problem-ref {
+  font-size: 0.8rem; color: var(--muted);
+}
+
+.modal-section { margin-bottom: 1.5rem; }
+.modal-section-title {
+  font-size: clamp(0.7rem, 1.4vw, 0.8rem);
+  font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 0.6rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--violet);
+}
+.modal-section p {
+  font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+  color: rgba(248,250,252,0.8); line-height: 1.7;
+}
+.modal-section ul {
+  list-style: none; display: flex; flex-direction: column; gap: 0.5rem;
+}
+.modal-section ul li {
+  font-size: clamp(0.85rem, 1.7vw, 0.95rem);
+  color: rgba(248,250,252,0.8); line-height: 1.6;
+  padding-left: 1.2rem; position: relative;
+}
+.modal-section ul li::before {
+  content: '▸'; position: absolute; left: 0;
+  color: var(--cyan); font-size: 0.75rem;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+.meta-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+.meta-label { font-size: 0.65rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+.meta-value { font-size: clamp(0.8rem, 1.5vw, 0.9rem); font-weight: 500; color: var(--text); }
+
+.complexity-chip {
+  display: inline-block; font-size: 0.8rem; font-weight: 600;
+  padding: 0.25rem 0.75rem; border-radius: 20px;
+}
+.complexity-low { background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.3); }
+.complexity-medium { background: rgba(245,158,11,0.15); color: #FBBF24; border: 1px solid rgba(245,158,11,0.3); }
+.complexity-high { background: rgba(239,68,68,0.15); color: #F87171; border: 1px solid rgba(239,68,68,0.3); }
+
+.feedback-section {
+  margin-top: 1.5rem; padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.feedback-label {
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+  color: var(--muted);
+}
+.feedback-btns { display: flex; gap: 0.75rem; }
+.feedback-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.6rem 1.25rem; border-radius: 50px;
+  font-family: inherit; font-size: clamp(0.8rem, 1.6vw, 0.9rem);
+  font-weight: 600; cursor: pointer; border: 1px solid transparent;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.05);
+  color: var(--muted);
+  border-color: rgba(255,255,255,0.1);
+}
+.feedback-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+.feedback-btn.active-up { background: rgba(6,182,212,0.15); color: var(--cyan); border-color: var(--cyan); }
+.feedback-btn.active-down { background: rgba(239,68,68,0.15); color: #F87171; border-color: rgba(239,68,68,0.6); }
+
+/* ── Guide Robot ── */
+.guide-robot {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 0.75rem;
+}
+.guide-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(124,58,237,0.15);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: visible;
+  transition: transform 0.2s;
+  box-shadow: 0 0 0 2px var(--violet), 0 4px 20px var(--glow-violet);
+  color: var(--violet);
+}
+.guide-btn:hover { transform: scale(1.1); }
+
+.guide-tooltip {
+  display: none;
+  position: absolute;
+  bottom: 66px; right: 0;
+  width: clamp(200px, 50vw, 260px);
+  background: #0D0D1A;
+  border: 1px solid rgba(124,58,237,0.4);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+  line-height: 1.6;
+  color: var(--text);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+.guide-tooltip.open { display: block; }
+.guide-tooltip::after {
+  content: '';
+  position: absolute; bottom: -7px; right: 18px;
+  border: 6px solid transparent;
+  border-top-color: rgba(124,58,237,0.4);
+}
+
+/* ── Step progress bar (top) ── */
+.step-bar {
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  position: relative;
+}
+.step-bar-fill {
+  height: 100%; background: var(--gradient);
+  transition: width 0.5s ease;
+}
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 1 — Introduction
+══════════════════════════════════════════════ -->
+<div id="screen-1" class="screen active">
+  <div class="step-bar"><div class="step-bar-fill" style="width:25%"></div></div>
+  <div class="header">
+    <div class="logo gradient-text">Strategy Unbounded</div>
+    <div class="step-indicator"><span>01</span> / 04</div>
+  </div>
+  <div class="screen-body">
+    <div class="avatar-column">
+      <div class="avatar-ring-wrapper">
+        <div class="avatar-glow"></div>
+        <div class="avatar-ring"></div>
+        <div class="avatar-inner">
+          <img id="avatar-img" src="" alt="AI Guide" onerror="this.style.display='none'">
+          <svg class="avatar-fallback" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="22" r="18" stroke="#7C3AED" stroke-width="2"/>
+            <path d="M10 80 C10 58 70 58 70 80" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" fill="none"/>
+            <circle cx="33" cy="20" r="3" fill="#06B6D4"/>
+            <circle cx="47" cy="20" r="3" fill="#06B6D4"/>
+            <path d="M33 28 Q40 34 47 28" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <line x1="40" y1="4" x2="40" y2="0" stroke="#7C3AED" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="40" cy="-1" r="2" fill="#06B6D4"/>
+          </svg>
+        </div>
+      </div>
+      <div class="avatar-label">AI Strategy Guide</div>
+    </div>
+
+    <div class="bubble-column">
+      <div class="speech-bubble">
+        <div class="bubble-text" id="bubble-text"><span class="cursor-blink"></span></div>
+      </div>
+      <button class="btn-primary" id="begin-btn" disabled onclick="goToScreen(2)">
+        Initialise Session →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 2 — Problem Input
+══════════════════════════════════════════════ -->
+<div id="screen-2" class="screen">
+  <div class="step-bar"><div class="step-bar-fill" style="width:50%"></div></div>
+  <div class="header">
+    <div class="logo gradient-text">Strategy Unbounded</div>
+    <div class="step-indicator"><span>02</span> / 04</div>
+  </div>
+  <div class="screen-body">
+    <div class="input-header">
+      <h1>Input Your Challenges</h1>
+      <p>Five problems. Our agents will handle the rest.</p>
+    </div>
+    <div class="problems-form">
+      <div class="problem-row">
+        <div class="problem-num">01</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="p1" placeholder="Describe your first challenge…" maxlength="300" oninput="updateChar(this,'c1');checkForm()"></textarea>
+          <div class="char-count" id="c1">0 / 300</div>
+        </div>
+      </div>
+      <div class="problem-row">
+        <div class="problem-num">02</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="p2" placeholder="Describe your second challenge…" maxlength="300" oninput="updateChar(this,'c2');checkForm()"></textarea>
+          <div class="char-count" id="c2">0 / 300</div>
+        </div>
+      </div>
+      <div class="problem-row">
+        <div class="problem-num">03</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="p3" placeholder="Describe your third challenge…" maxlength="300" oninput="updateChar(this,'c3');checkForm()"></textarea>
+          <div class="char-count" id="c3">0 / 300</div>
+        </div>
+      </div>
+      <div class="problem-row">
+        <div class="problem-num">04</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="p4" placeholder="Describe your fourth challenge…" maxlength="300" oninput="updateChar(this,'c4');checkForm()"></textarea>
+          <div class="char-count" id="c4">0 / 300</div>
+        </div>
+      </div>
+      <div class="problem-row">
+        <div class="problem-num">05</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="p5" placeholder="Describe your fifth challenge…" maxlength="300" oninput="updateChar(this,'c5');checkForm()"></textarea>
+          <div class="char-count" id="c5">0 / 300</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primary" id="submit-btn" disabled onclick="submitProblems()">
+          Run AI Analysis →
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="guide-robot">
+    <div class="guide-tooltip" id="guide-s2">Be specific. The more detail you provide, the more targeted the AI use cases will be.</div>
+    <button class="guide-btn" onclick="toggleGuide('guide-s2')" title="Guide">
+      <svg width="22" height="22" viewBox="0 0 40 46" fill="none">
+        <rect x="6" y="10" width="28" height="22" rx="5" stroke="currentColor" stroke-width="2"/>
+        <line x1="20" y1="10" x2="20" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="3" r="2.5" fill="currentColor"/>
+        <circle cx="13" cy="20" r="3.5" fill="currentColor"/>
+        <circle cx="27" cy="20" r="3.5" fill="currentColor"/>
+        <path d="M12 28 Q20 34 28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <rect x="11" y="32" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2"/>
+        <line x1="6" y1="34" x2="11" y2="37" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="34" y1="34" x2="29" y2="37" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 3 — Processing
+══════════════════════════════════════════════ -->
+<div id="screen-3" class="screen">
+  <div class="step-bar"><div class="step-bar-fill" style="width:75%"></div></div>
+  <div class="header">
+    <div class="logo gradient-text">Strategy Unbounded</div>
+    <div class="step-indicator"><span>03</span> / 04</div>
+  </div>
+  <div class="screen-body">
+    <div class="agents-visual">
+      <svg class="agents-svg" viewBox="0 0 420 140">
+        <defs>
+          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#7C3AED"/>
+            <stop offset="100%" stop-color="#06B6D4"/>
+          </linearGradient>
+        </defs>
+        <!-- Connecting lines -->
+        <line class="flow-line" x1="80" y1="60" x2="210" y2="60"/>
+        <line class="flow-line" x1="210" y1="60" x2="340" y2="60" style="animation-delay:-0.75s"/>
+        <!-- Agent 1 -->
+        <g class="agent-node">
+          <circle class="agent-glow-circle" cx="60" cy="60" r="32"/>
+          <circle class="agent-node-circle" cx="60" cy="60" r="32"/>
+          <text class="agent-node-label" x="60" y="55" fill="#7C3AED" font-size="11" font-weight="700">AI</text>
+          <text class="agent-node-label" x="60" y="68">01</text>
+          <text class="agent-node-label" x="60" y="105">AGENT 01</text>
+        </g>
+        <!-- Agent 2 -->
+        <g class="agent-node">
+          <circle class="agent-glow-circle" cx="210" cy="60" r="32"/>
+          <circle class="agent-node-circle" cx="210" cy="60" r="32"/>
+          <text class="agent-node-label" x="210" y="55" fill="#7C3AED" font-size="11" font-weight="700">AI</text>
+          <text class="agent-node-label" x="210" y="68">02</text>
+          <text class="agent-node-label" x="210" y="105">AGENT 02</text>
+        </g>
+        <!-- Agent 3 -->
+        <g class="agent-node">
+          <circle class="agent-glow-circle" cx="360" cy="60" r="32"/>
+          <circle class="agent-node-circle" cx="360" cy="60" r="32"/>
+          <text class="agent-node-label" x="360" y="55" fill="#7C3AED" font-size="11" font-weight="700">AI</text>
+          <text class="agent-node-label" x="360" y="68">03</text>
+          <text class="agent-node-label" x="360" y="105">AGENT 03</text>
+        </g>
+      </svg>
+    </div>
+    <div class="processing-title gradient-text">Neural Agents Activated</div>
+    <div class="processing-status" id="processing-status">Parsing challenge matrix…</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="processing-dots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN 4 — Results
+══════════════════════════════════════════════ -->
+<div id="screen-4" class="screen">
+  <div class="step-bar"><div class="step-bar-fill" style="width:100%"></div></div>
+  <div class="header">
+    <div class="logo gradient-text">Strategy Unbounded</div>
+    <div class="step-indicator"><span>04</span> / 04</div>
+  </div>
+  <div class="screen-body">
+    <div class="results-header">
+      <h1 class="gradient-text">AI Use Cases Identified</h1>
+      <p>15 opportunities across your 5 challenges. Click any card to explore. Adjust priorities using the controls.</p>
+    </div>
+    <div id="results-container"></div>
+  </div>
+  <div class="guide-robot">
+    <div class="guide-tooltip" id="guide-s4">Click any card to view full details. Use ▲ ▼ to reprioritise use cases based on your business context.</div>
+    <button class="guide-btn" onclick="toggleGuide('guide-s4')" title="Guide">
+      <svg width="22" height="22" viewBox="0 0 40 46" fill="none">
+        <rect x="6" y="10" width="28" height="22" rx="5" stroke="currentColor" stroke-width="2"/>
+        <line x1="20" y1="10" x2="20" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="3" r="2.5" fill="currentColor"/>
+        <circle cx="13" cy="20" r="3.5" fill="currentColor"/>
+        <circle cx="27" cy="20" r="3.5" fill="currentColor"/>
+        <path d="M12 28 Q20 34 28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <rect x="11" y="32" width="18" height="10" rx="3" stroke="currentColor" stroke-width="2"/>
+        <line x1="6" y1="34" x2="11" y2="37" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line x1="34" y1="34" x2="29" y2="37" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     Card Detail Modal
+══════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel" id="modal-panel">
+    <button class="modal-guide" onclick="toggleGuide('guide-modal')" title="Guide">
+      <svg width="16" height="16" viewBox="0 0 40 46" fill="none">
+        <rect x="6" y="10" width="28" height="22" rx="5" stroke="currentColor" stroke-width="2"/>
+        <circle cx="13" cy="20" r="3" fill="currentColor"/>
+        <circle cx="27" cy="20" r="3" fill="currentColor"/>
+        <path d="M12 28 Q20 33 28 28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
+    <div class="guide-tooltip" id="guide-modal" style="position:absolute;top:60px;right:0;bottom:auto;">Review all details carefully. Your thumbs feedback shapes the final workshop output.</div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-header">
+      <div class="modal-title gradient-text" id="modal-title"></div>
+      <div class="modal-problem-ref" id="modal-problem-ref"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Description</div>
+      <p id="modal-description"></p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">How It Works</div>
+      <ul id="modal-how"></ul>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Key Details</div>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Data Required</div>
+          <div class="meta-value" id="modal-data"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Time to Implement</div>
+          <div class="meta-value" id="modal-time"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Complexity</div>
+          <div class="meta-value" id="modal-complexity"></div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Estimated Cost &amp; ROI</div>
+          <div class="meta-value" id="modal-roi"></div>
+        </div>
+      </div>
+    </div>
+    <div class="feedback-section">
+      <div class="feedback-label">Is this use case relevant to your business?</div>
+      <div class="feedback-btns">
+        <button class="feedback-btn" id="thumb-up" onclick="setFeedback('up')">👍 Relevant</button>
+        <button class="feedback-btn" id="thumb-down" onclick="setFeedback('down')">👎 Not applicable</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const API_KEY = 'YOUR_OPENAI_API_KEY';
+const ENDPOINT = 'YOUR_OPENAI_ENDPOINT';
+
+// ── State ────────────────────────────────────────────────────────────────────
+let problems = [];
+let useCases = [];
+let priorities = {};
+let feedback = {};
+let activeModalId = null;
+let openTooltips = new Set();
+
+// ── Mock data ────────────────────────────────────────────────────────────────
+const MOCK_PROBLEMS = [
+  "Manual invoice processing takes 3 days and is error-prone",
+  "High customer churn rate with no early warning system",
+  "Supply chain disruptions causing stock-outs",
+  "Slow recruitment process losing top candidates",
+  "Regulatory compliance monitoring done manually"
+];
+
+const MOCK_USE_CASES = [
+  // Problem 0
+  { id:0, problem_index:0, title:"Intelligent Invoice Processing", summary:"Automate invoice ingestion, extraction and approval using computer vision.", description:"Deploy an AI system that reads invoices in any format—PDF, image, or email—extracts key fields using OCR and large language models, then routes them automatically through approval workflows. The system learns from corrections to improve accuracy over time, reducing a 3-day process to under 2 hours.", how_it_works:["Documents ingested via email, scanner, or upload portal","OCR + NLP extracts vendor, amount, line items, and due date","Validation against ERP master data flags discrepancies","Auto-routes to the correct approver based on spend rules"], data_required:"Historical invoices, ERP vendor master, approval workflow rules", time_to_implement:"3–5 months for MVP", complexity:"Medium", cost_roi:"£70k build cost; estimated 4× ROI within 12 months through FTE reduction", priority:1 },
+  { id:1, problem_index:0, title:"Accounts Payable Automation", summary:"End-to-end AP workflow automation with AI-driven exception handling.", description:"Implement an AI-powered accounts payable platform that matches purchase orders to invoices and receipts in a three-way match, automatically posts to the general ledger, and uses ML to predict and prevent duplicate payments. Exceptions are intelligently triaged to the right team member.", how_it_works:["Three-way PO/invoice/receipt matching via ML","Automated GL coding based on historical patterns","Duplicate payment detection using fuzzy matching","Exception dashboard with recommended resolution actions"], data_required:"ERP transaction history, PO data, GL chart of accounts", time_to_implement:"4–6 months", complexity:"Medium", cost_roi:"£90k build; saves £200k/year in processing costs and penalty avoidance", priority:2 },
+  { id:2, problem_index:0, title:"Vendor Risk Scoring AI", summary:"Continuously assess and score supplier financial and operational risk.", description:"Build an AI model that aggregates data from credit bureaus, news sources, Companies House, and internal payment history to generate a live risk score for every vendor. Alerts are triggered when a supplier's score deteriorates, giving the procurement team time to diversify supply before disruption.", how_it_works:["Data aggregation from 8+ external and internal sources","NLP scans news and legal filings for risk signals","ML model outputs a 0–100 risk score updated weekly","Dashboard with risk trends and recommended mitigation actions"], data_required:"Vendor master data, payment history, public financial data APIs", time_to_implement:"5–7 months", complexity:"High", cost_roi:"£120k build; prevents an estimated £500k/year in supply disruption losses", priority:3 },
+  // Problem 1
+  { id:3, problem_index:1, title:"Customer Churn Prediction", summary:"Identify at-risk customers 90 days before they leave, enabling proactive retention.", description:"Train a gradient boosting model on 24 months of CRM, product usage, support ticket, and billing data to predict which customers have a high probability of churning in the next quarter. Outputs a daily-updated risk list with the top contributing factors and recommended retention actions per customer.", how_it_works:["Feature engineering from CRM, billing, usage, and NPS data","Gradient boosting model trained on historical churn events","Daily scoring run outputs top 10% at-risk customers","Retention playbooks automatically assigned per risk profile"], data_required:"CRM records, billing history, product usage logs, support tickets, NPS scores", time_to_implement:"3–4 months", complexity:"Medium", cost_roi:"£60k build; retaining 5% more customers worth £800k additional ARR", priority:1 },
+  { id:4, problem_index:1, title:"AI Support Agent", summary:"A 24/7 conversational AI that resolves 60% of support tickets without human intervention.", description:"Deploy a fine-tuned large language model trained on your product documentation, historical resolved tickets, and knowledge base articles. The agent handles Tier-1 queries autonomously, escalates complex cases with a full context summary, and continuously improves from agent feedback.", how_it_works:["LLM fine-tuned on product docs and 50k+ historical tickets","Intent classification routes queries to the right handler","Autonomous resolution for common query types with confidence threshold","Escalation package includes full conversation context and suggested resolution"], data_required:"Support ticket history, product documentation, knowledge base articles", time_to_implement:"2–4 months", complexity:"Low", cost_roi:"£45k build; reduces support cost by £250k/year and improves CSAT by 18 points", priority:2 },
+  { id:5, problem_index:1, title:"Sentiment Analysis Pipeline", summary:"Real-time analysis of customer sentiment across all communication channels.", description:"Build an NLP pipeline that ingests emails, chat logs, reviews, and social mentions and applies sentiment and topic modelling to surface emerging issues before they drive churn. A live dashboard shows sentiment trends by product area, customer segment, and support agent.", how_it_works:["Connectors ingest data from email, chat, Trustpilot, and social APIs","Transformer-based model classifies sentiment and topic per message","Trend detection algorithm flags anomalous sentiment drops","Weekly digest pushed to product and CX leadership"], data_required:"Email and chat logs, review platform APIs, social media firehose", time_to_implement:"2–3 months", complexity:"Low", cost_roi:"£35k build; early detection of issues prevents estimated £300k/year in churn-driven revenue loss", priority:3 },
+  // Problem 2
+  { id:6, problem_index:2, title:"Supply Chain Demand Forecasting", summary:"ML-powered demand forecasting to reduce stock-outs and overstock simultaneously.", description:"Replace spreadsheet-based forecasting with an ensemble ML model that combines historical sales, seasonal patterns, marketing calendars, and external signals (weather, economic indicators) to generate SKU-level demand forecasts at 90%+ accuracy across a 13-week horizon.", how_it_works:["Ensemble model (XGBoost + LSTM) trained on 3 years of sales data","External signals integrated: weather, holidays, promotions","Weekly forecasts generated at SKU × location granularity","Uncertainty intervals highlight which SKUs need planner review"], data_required:"Historical sales data, inventory records, promotional calendars, external data feeds", time_to_implement:"4–6 months", complexity:"High", cost_roi:"£110k build; reduces stock-out revenue loss by £600k and overstock by £200k/year", priority:1 },
+  { id:7, problem_index:2, title:"Inventory Anomaly Detection", summary:"Detect shrinkage, miscounts, and data errors in real-time before they cause disruption.", description:"Deploy an unsupervised anomaly detection model that monitors inventory movements and counts across all locations in real time. It learns normal patterns per SKU, location, and time of day, then flags deviations that indicate shrinkage, miscounts, system errors, or potential fraud.", how_it_works:["Real-time stream processing of inventory movement events","Isolation Forest + statistical control charts detect anomalies","Severity scoring prioritises which anomalies need immediate investigation","Integration with WMS sends automated alerts to warehouse managers"], data_required:"Real-time WMS transaction feed, historical inventory counts, POS data", time_to_implement:"3–4 months", complexity:"Medium", cost_roi:"£75k build; estimated £400k/year reduction in inventory losses and write-offs", priority:2 },
+  { id:8, problem_index:2, title:"Logistics Route Optimisation", summary:"AI route planning that reduces delivery cost by 20% and improves on-time delivery.", description:"Implement a reinforcement learning-based logistics optimisation engine that plans optimal delivery routes by considering vehicle capacity, driver hours, traffic patterns, customer time windows, and fuel cost. The system re-optimises dynamically when new orders arrive or disruptions occur.", how_it_works:["Reinforcement learning agent trained on historical route and delivery data","Dynamic re-optimisation triggered by new orders or traffic events","Integration with Google Maps API for real-time traffic data","Driver app provides turn-by-turn routing with live updates"], data_required:"Order data, vehicle fleet specs, historical route and delivery data, traffic APIs", time_to_implement:"5–8 months", complexity:"High", cost_roi:"£140k build; saves £350k/year in fuel and overtime; improves on-time delivery by 22%", priority:3 },
+  // Problem 3
+  { id:9, problem_index:3, title:"AI Candidate Screening", summary:"Screen and rank applicants in minutes, not weeks, with bias-reduced AI.", description:"Build an AI screening system that parses CVs, scores candidates against role requirements using NLP and semantic similarity, and surfaces the top 10% of applicants with a structured evidence pack for recruiters. Built-in fairness checks anonymise protected characteristics during initial ranking.", how_it_works:["CV parsing extracts skills, experience, education, and achievements","Semantic similarity matching against job description requirements","Bias mitigation: anonymises name, gender, age indicators before scoring","Recruiter dashboard shows ranked shortlist with score rationale"], data_required:"Job descriptions, historical CV and hire data, competency frameworks", time_to_implement:"3–4 months", complexity:"Medium", cost_roi:"£65k build; reduces time-to-shortlist from 3 weeks to 2 days; saves 40 recruiter hours per hire", priority:1 },
+  { id:10, problem_index:3, title:"Employee Productivity Coach", summary:"Personalised AI coaching that identifies blockers and suggests productivity improvements.", description:"Deploy an AI productivity coach that analyses anonymised calendar, task, and collaboration data to identify patterns affecting individual and team productivity. The coach surfaces insights and micro-nudges through a Slack or Teams integration, helping employees reclaim focus time and reduce meeting overload.", how_it_works:["Anonymised data collected from calendar, task management, and collaboration tools","ML model identifies time fragmentation, meeting overload, and focus block erosion","Personalised weekly insights delivered via Slack/Teams message","Team-level aggregates help managers identify systemic blockers"], data_required:"Calendar data (anonymised), task tool APIs (Jira/Asana), Teams/Slack metadata", time_to_implement:"3–5 months", complexity:"Medium", cost_roi:"£80k build; estimated 1.5 hours of productivity recovered per employee per week", priority:2 },
+  { id:11, problem_index:3, title:"Knowledge Graph Assistant", summary:"Make institutional knowledge searchable and accessible through a conversational AI.", description:"Build a retrieval-augmented generation (RAG) assistant trained on internal documents, wikis, policies, and past project outputs. Employees ask natural-language questions and receive accurate, cited answers. The system dramatically reduces time spent searching for information and onboarding new joiners.", how_it_works:["Document ingestion pipeline processes PDFs, wikis, Confluence, and SharePoint","Embeddings stored in a vector database (Pinecone or Weaviate)","RAG architecture retrieves relevant context before LLM generates response","All answers cite their source documents with clickable links"], data_required:"Internal wikis, SharePoint/Confluence documents, HR policies, project archives", time_to_implement:"2–4 months", complexity:"Low", cost_roi:"£50k build; reduces knowledge search time by 60%; accelerates onboarding by 3 weeks", priority:3 },
+  // Problem 4
+  { id:12, problem_index:4, title:"Real-Time Compliance Monitor", summary:"Continuous AI monitoring of transactions and communications for compliance breaches.", description:"Deploy an AI compliance monitoring system that analyses financial transactions, communications, and operational records in real time against regulatory rules (FCA, GDPR, SOX). It flags potential breaches with a risk score and evidence pack, reducing reliance on manual sampling reviews.", how_it_works:["Real-time transaction and communication data ingested via API connectors","Rule engine + ML model detects policy violations and anomalous patterns","Each flag includes a risk score, evidence, and suggested remediation step","Monthly compliance reports auto-generated for the board and auditors"], data_required:"Transaction records, email and call logs, regulatory rulebook, historical breach data", time_to_implement:"6–9 months", complexity:"High", cost_roi:"£180k build; reduces regulatory fine risk by £2M+/year; cuts compliance audit cost by 40%", priority:1 },
+  { id:13, problem_index:4, title:"Financial Risk Scoring", summary:"AI-powered credit and counterparty risk scoring updated daily across the full portfolio.", description:"Build a machine learning risk scoring engine that ingests internal exposure data, market data feeds, and credit bureau information to generate daily risk scores for every counterparty and product. Scenario analysis tools help the risk team model the impact of macro shocks on the portfolio.", how_it_works:["Daily data pull from internal systems, Bloomberg, and credit bureaus","Gradient boosting model generates probability of default per counterparty","Stress testing module runs macro scenarios (rate rise, recession) on the portfolio","Executive risk dashboard with drill-down to individual exposure level"], data_required:"Internal exposure data, credit bureau feeds, Bloomberg/Reuters market data", time_to_implement:"5–7 months", complexity:"High", cost_roi:"£150k build; reduces unexpected credit losses by an estimated £1.2M/year", priority:2 },
+  { id:14, problem_index:4, title:"Revenue Optimisation Engine", summary:"Dynamic pricing and promotion AI that maximises margin without sacrificing volume.", description:"Implement a reinforcement learning pricing engine that continuously tests and adjusts prices across products and customer segments based on demand elasticity, competitor pricing, inventory levels, and margin targets. A/B testing framework validates recommendations before full rollout.", how_it_works:["Demand elasticity models trained per product × segment × channel","Competitor price monitoring via web scraping updated every 6 hours","RL agent recommends price changes with projected revenue and volume impact","A/B testing framework validates before pushing to full catalogue"], data_required:"Historical pricing and sales data, competitor pricing, inventory levels, cost data", time_to_implement:"5–8 months", complexity:"High", cost_roi:"£160k build; drives 4–7% gross margin improvement worth £900k/year at current revenue", priority:3 }
+];
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function goToScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + n);
+  if (el) el.classList.add('active');
+  window.scrollTo(0, 0);
+  openTooltips.clear();
+}
+
+// ── Typewriter ────────────────────────────────────────────────────────────────
+const INTRO_TEXT = "Welcome to Strategy Unbounded. Your task today is to identify five real problems your organisation faces — challenges, inefficiencies, risks, or opportunities being missed. Once you've shared those problems, our AI agents will brainstorm powerful AI-driven solutions for each one. Take a moment to reflect. When you're ready, click below to begin.";
+
+function startTypewriter() {
+  const el = document.getElementById('bubble-text');
+  const words = INTRO_TEXT.split(' ');
+  let i = 0;
+  el.innerHTML = '<span class="cursor-blink"></span>';
+
+  function typeNext() {
+    if (i >= words.length) {
+      document.getElementById('begin-btn').disabled = false;
+      return;
+    }
+    const cursor = el.querySelector('.cursor-blink');
+    const textNode = document.createTextNode((i === 0 ? '' : ' ') + words[i]);
+    el.insertBefore(textNode, cursor);
+    i++;
+    setTimeout(typeNext, 55 + Math.random() * 35);
+  }
+  setTimeout(typeNext, 600);
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────────
+function updateChar(el, countId) {
+  document.getElementById(countId).textContent = el.value.length + ' / 300';
+}
+
+function checkForm() {
+  const vals = ['p1','p2','p3','p4','p5'].map(id => document.getElementById(id).value.trim());
+  const allFilled = vals.every(v => v.length >= 10);
+  document.getElementById('submit-btn').disabled = !allFilled;
+}
+
+function submitProblems() {
+  problems = ['p1','p2','p3','p4','p5'].map(id => document.getElementById(id).value.trim());
+  goToScreen(3);
+  startProcessing();
+}
+
+// ── Processing ────────────────────────────────────────────────────────────────
+const STATUS_MSGS = [
+  "Parsing challenge matrix…",
+  "Synthesising AI frameworks…",
+  "Calibrating use case impact…",
+  "Compiling your report…"
+];
+
+function startProcessing() {
+  let idx = 0;
+  const statusEl = document.getElementById('processing-status');
+
+  const statusInterval = setInterval(() => {
+    idx = (idx + 1) % STATUS_MSGS.length;
+    statusEl.style.opacity = '0';
+    setTimeout(() => {
+      statusEl.textContent = STATUS_MSGS[idx];
+      statusEl.style.opacity = '1';
+    }, 300);
+  }, 3000);
+
+  // Reset progress bar by removing and re-adding
+  const fill = document.getElementById('progress-fill');
+  fill.style.animation = 'none';
+  fill.offsetHeight; // reflow
+  fill.style.animation = '';
+
+  callLLM(problems).then(result => {
+    useCases = result;
+    result.forEach(uc => { priorities[uc.id] = uc.priority; });
+    clearInterval(statusInterval);
+    setTimeout(() => {
+      renderResults(useCases);
+      goToScreen(4);
+    }, 500);
+  });
+}
+
+async function callLLM(probs) {
+  if (API_KEY === 'YOUR_OPENAI_API_KEY') return getMockData(probs);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+API_KEY },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+        messages: [{
+          role: 'system',
+          content: 'You are a strategic AI consultant. Given 5 company problems, generate exactly 3 AI-powered use cases per problem (15 total). Return a JSON object with key "use_cases" containing an array of 15 objects. Each object must have: id (0-14), problem_index (0-4), title (string), summary (one sentence string), description (2-3 sentence string), how_it_works (array of 4 strings), data_required (string), time_to_implement (string like "3-5 months"), complexity ("Low","Medium", or "High"), cost_roi (string), priority (1, 2, or 3 — assign 1 to highest impact use case per problem, 2 to second, 3 to third).'
+        },{
+          role: 'user',
+          content: 'Here are 5 company problems:\n' + probs.map((p,i)=>`${i+1}. ${p}`).join('\n') + '\n\nGenerate 3 AI use cases for each problem.'
+        }]
+      })
+    });
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    return parsed.use_cases;
+  } catch(e) {
+    console.warn('LLM call failed, using mock data:', e);
+    return getMockData(probs);
+  }
+}
+
+function getMockData(probs) {
+  const displayProbs = probs.every(p => p.length > 0) ? probs : MOCK_PROBLEMS;
+  return MOCK_USE_CASES.map((uc, i) => ({
+    ...uc,
+    problem_text: displayProbs[uc.problem_index] || MOCK_PROBLEMS[uc.problem_index]
+  }));
+}
+
+// ── Render Results ────────────────────────────────────────────────────────────
+function renderResults(ucs) {
+  const container = document.getElementById('results-container');
+  container.innerHTML = '';
+  const displayProblems = problems.every(p => p.length > 0) ? problems : MOCK_PROBLEMS;
+
+  for (let pi = 0; pi < 5; pi++) {
+    const section = document.createElement('div');
+    section.className = 'problem-section';
+    section.id = 'section-' + pi;
+
+    const problemText = displayProblems[pi] || 'Problem ' + (pi+1);
+    section.innerHTML = `
+      <div class="problem-section-header" onclick="toggleSection(${pi})">
+        <span class="problem-section-number">P${pi+1}</span>
+        <span class="problem-section-text">${problemText}</span>
+        <span class="collapse-arrow">▾</span>
+      </div>
+      <div class="cards-grid" id="grid-${pi}"></div>
+    `;
+    container.appendChild(section);
+
+    const grid = section.querySelector('#grid-' + pi);
+    ucs.filter(uc => uc.problem_index === pi).forEach(uc => {
+      grid.appendChild(createCard(uc));
+    });
+  }
+}
+
+function createCard(uc) {
+  const p = priorities[uc.id] || uc.priority;
+  const pClass = 'p' + p;
+  const pLabel = 'P' + p + ' ●';
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'card-' + uc.id;
+  card.innerHTML = `
+    <div class="card-top">
+      <div style="flex:1"></div>
+      <div class="priority-group">
+        <button class="priority-btn" onclick="event.stopPropagation();changePriority(${uc.id},-1)" ${p<=1?'disabled':''}>▲</button>
+        <span class="priority-badge ${pClass}" id="badge-${uc.id}">${pLabel}</span>
+        <button class="priority-btn" onclick="event.stopPropagation();changePriority(${uc.id},1)" ${p>=3?'disabled':''}>▼</button>
+      </div>
+    </div>
+    <div class="card-title">${uc.title}</div>
+    <div class="card-summary">${uc.summary}</div>
+    <span class="card-link">Explore →</span>
+  `;
+  card.addEventListener('click', () => openModal(uc));
+  return card;
+}
+
+// ── Priority ──────────────────────────────────────────────────────────────────
+function changePriority(id, delta) {
+  const cur = priorities[id] || 1;
+  const next = Math.min(3, Math.max(1, cur + delta));
+  if (next === cur) return;
+  priorities[id] = next;
+
+  const badge = document.getElementById('badge-' + id);
+  badge.className = 'priority-badge p' + next;
+  badge.textContent = 'P' + next + ' ●';
+
+  const card = document.getElementById('card-' + id);
+  const btns = card.querySelectorAll('.priority-btn');
+  btns[0].disabled = next <= 1;
+  btns[1].disabled = next >= 3;
+}
+
+// ── Section collapse ──────────────────────────────────────────────────────────
+function toggleSection(pi) {
+  document.getElementById('section-' + pi).classList.toggle('collapsed');
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal(uc) {
+  activeModalId = uc.id;
+  document.getElementById('modal-title').textContent = uc.title;
+  const displayProblems = problems.every(p=>p.length>0) ? problems : MOCK_PROBLEMS;
+  const problemText = uc.problem_text || displayProblems[uc.problem_index] || 'Problem ' + (uc.problem_index+1);
+  document.getElementById('modal-problem-ref').textContent = 'Re: ' + problemText.substring(0, 70) + (problemText.length > 70 ? '…' : '');
+  document.getElementById('modal-description').textContent = uc.description;
+
+  const howEl = document.getElementById('modal-how');
+  howEl.innerHTML = '';
+  (uc.how_it_works || []).forEach(step => {
+    const li = document.createElement('li');
+    li.textContent = step;
+    howEl.appendChild(li);
+  });
+
+  document.getElementById('modal-data').textContent = uc.data_required;
+  document.getElementById('modal-time').textContent = uc.time_to_implement;
+
+  const cx = uc.complexity || 'Medium';
+  document.getElementById('modal-complexity').innerHTML = `<span class="complexity-chip complexity-${cx.toLowerCase()}">${cx}</span>`;
+  document.getElementById('modal-roi').textContent = uc.cost_roi;
+
+  const fb = feedback[uc.id];
+  document.getElementById('thumb-up').className = 'feedback-btn' + (fb === 'up' ? ' active-up' : '');
+  document.getElementById('thumb-down').className = 'feedback-btn' + (fb === 'down' ? ' active-down' : '');
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  activeModalId = null;
+  openTooltips.delete('guide-modal');
+  const gt = document.getElementById('guide-modal');
+  if (gt) gt.classList.remove('open');
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ── Feedback ──────────────────────────────────────────────────────────────────
+function setFeedback(type) {
+  if (!activeModalId && activeModalId !== 0) return;
+  const cur = feedback[activeModalId];
+  feedback[activeModalId] = cur === type ? null : type;
+  const newFb = feedback[activeModalId];
+  document.getElementById('thumb-up').className = 'feedback-btn' + (newFb === 'up' ? ' active-up' : '');
+  document.getElementById('thumb-down').className = 'feedback-btn' + (newFb === 'down' ? ' active-down' : '');
+}
+
+// ── Guide tooltip ─────────────────────────────────────────────────────────────
+function toggleGuide(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isOpen = el.classList.contains('open');
+  // Close all tooltips first
+  document.querySelectorAll('.guide-tooltip').forEach(t => t.classList.remove('open'));
+  openTooltips.clear();
+  if (!isOpen) {
+    el.classList.add('open');
+    openTooltips.add(id);
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.guide-robot') && !e.target.closest('.guide-btn') && !e.target.closest('.modal-guide')) {
+    document.querySelectorAll('.guide-tooltip').forEach(t => t.classList.remove('open'));
+    openTooltips.clear();
+  }
+});
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  startTypewriter();
+});
+</script>
+</body>
+</html>

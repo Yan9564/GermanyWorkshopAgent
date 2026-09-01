@@ -1,0 +1,11 @@
+{
+  "name": "Professional services / cross-cutting",
+  "problems": [
+    "TODO: Add professional services problem 1",
+    "TODO: Add professional services problem 2",
+    "TODO: Add professional services problem 3",
+    "TODO: Add professional services problem 4",
+    "TODO: Add professional services problem 5"
+  ],
+  "notes": "Deliberately broad or overlapping problems to stress-test the planner's grouping logic and brainstorm specificity on harder inputs."
+}

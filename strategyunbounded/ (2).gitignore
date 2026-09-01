@@ -1,0 +1,15 @@
+.env
+
+.claude
+
+*.pptx
+
+backend/tests/eval/results/*.json
+
+__pycache__/
+*.pyc
+*.pyo
+.superpowers/
+
+node_modules/
+.next/

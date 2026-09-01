@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy Unbounded — Clarity Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #EEF2FF;
+    --surface: #FFFFFF;
+    --navy: #1E3A5F;
+    --blue: #2563EB;
+    --blue-light: #3B82F6;
+    --blue-dark: #1D4ED8;
+    --blue-tint: #EFF6FF;
+    --text: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border: #E2E8F0;
+    --green: #059669;
+    --amber: #D97706;
+    --red: #DC2626;
+    --p1: #2563EB;
+    --p2: #D97706;
+    --p3: #94A3B8;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.12);
+    --shadow-blue: 0 8px 24px rgba(37,99,235,0.12);
+    --radius: 12px;
+    --radius-lg: 20px;
+    --font: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    font-size: 16px;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: clamp(12px, 2vw, 16px) clamp(16px, 4vw, 40px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .app-logo {
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+  }
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-label {
+    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .step-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .step-dot {
+    width: clamp(24px, 4vw, 32px);
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .step-dot.active { background: var(--blue); }
+
+  /* ── SCREENS ── */
+  .screen {
+    display: none;
+    min-height: calc(100vh - 60px);
+    padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 40px);
+  }
+  .screen.active { display: block; }
+
+  /* ── SCREEN 1: INTRO ── */
+  .intro-layout {
+    display: flex;
+    gap: clamp(24px, 4vw, 48px);
+    align-items: flex-start;
+    flex-wrap: wrap;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding-top: clamp(16px, 3vw, 32px);
+  }
+  .intro-avatar-col {
+    flex: 0 0 clamp(240px, 30%, 340px);
+    min-width: 240px;
+  }
+  .avatar-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .avatar-image-area {
+    background: var(--blue-tint);
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  #avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+  .avatar-svg-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1;
+  }
+  .avatar-svg-fallback svg { opacity: 0.7; }
+  .avatar-card-footer {
+    padding: 12px 16px;
+    text-align: center;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .avatar-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .intro-content-col {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-top: 8px;
+  }
+  .intro-eyebrow {
+    font-size: clamp(0.7rem, 1.2vw, 0.8rem);
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .intro-heading {
+    font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  .speech-bubble {
+    background: var(--surface);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: clamp(16px, 2.5vw, 24px);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    min-height: 100px;
+  }
+  .speech-text {
+    font-size: clamp(0.88rem, 1.5vw, 1rem);
+    line-height: 1.75;
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+  .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--blue);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 0.9s step-end infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: clamp(12px, 2vw, 16px) clamp(24px, 3vw, 32px);
+    background: var(--blue);
+    color: #fff;
+    font-family: var(--font);
+    font-size: clamp(0.9rem, 1.5vw, 1rem);
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    width: 100%;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--blue-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+  }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-primary:disabled {
+    background: #CBD5E1;
+    color: #94A3B8;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ── SCREEN 2: PROBLEM INPUT ── */
+  .input-container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .screen-heading {
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .screen-subtext {
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: clamp(24px, 3vw, 36px);
+  }
+  .problem-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .problem-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .problem-number {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: 1.5px solid var(--blue);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--blue);
+    margin-top: 6px;
+  }
+  .problem-row.filled .problem-number {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  .textarea-wrap {
+    flex: 1;
+    position: relative;
+  }
+  .problem-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: var(--font);
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    color: var(--text);
+    resize: none;
+    height: 80px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.6;
+  }
+  .problem-textarea::placeholder { color: var(--text-muted); }
+  .problem-textarea:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+  .char-count {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  /* ── SCREEN 3: PROCESSING ── */
+  .processing-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    background: var(--bg);
+  }
+  .processing-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 48px);
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+    border: 1px solid var(--border);
+  }
+  .processing-wordmark {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 24px;
+  }
+  .processing-heading {
+    font-size: clamp(1.3rem, 3vw, 1.8rem);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    margin-bottom: 32px;
+  }
+  .agent-nodes {
+    display: flex;
+    gap: clamp(12px, 3vw, 24px);
+    justify-content: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .agent-node {
+    background: var(--blue-tint);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 12px;
+    width: clamp(100px, 28%, 150px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+  .agent-node svg { color: var(--blue); }
+  .agent-node-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .agent-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    animation: pulse-dot 1.4s ease-in-out infinite;
+  }
+  .agent-node:nth-child(2) .agent-dot { animation-delay: 0.3s; }
+  .agent-node:nth-child(3) .agent-dot { animation-delay: 0.6s; }
+  @keyframes pulse-dot {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.6; }
+  }
+  .progress-track {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--blue-light));
+    border-radius: 4px;
+    width: 0%;
+    animation: fill-progress 4s ease-in-out forwards;
+  }
+  @keyframes fill-progress { 0%{width:0%} 80%{width:90%} 100%{width:95%} }
+  .processing-status {
+    font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+    color: var(--blue);
+    font-weight: 600;
+    min-height: 1.4em;
+    transition: opacity 0.3s;
+  }
+
+  /* ── SCREEN 4: RESULTS ── */
+  .results-container { max-width: 1100px; margin: 0 auto; }
+  .results-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-bar {
+    background: var(--surface);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 14px 20px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .summary-bar-text {
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    font-weight: 600;
+    color: var(--navy);
+  }
+  .summary-badge {
+    background: var(--blue-tint);
+    color: var(--blue);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(37,99,235,0.2);
+  }
+  .problem-section {
+    margin-bottom: 24px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    border-left: 4px solid var(--blue);
+    background: var(--surface);
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .section-header:hover { background: var(--blue-tint); }
+  .section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+  .section-problem-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: var(--blue);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .section-problem-text {
+    font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+    font-weight: 700;
+    color: var(--navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .chevron-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform 0.25s ease;
+  }
+  .section-header.collapsed .chevron-icon { transform: rotate(-90deg); }
+  .section-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+  .section-cards.collapsed {
+    display: none;
+  }
+
+  /* ── CARD ── */
+  .use-case-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .use-case-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-blue);
+    border-color: var(--blue);
+  }
+  .card-top-stripe {
+    height: 4px;
+    background: var(--blue);
+    flex-shrink: 0;
+  }
+  .card-body {
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card-header-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card-title {
+    font-size: clamp(0.85rem, 1.4vw, 0.95rem);
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .card-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .priority-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  .priority-badge.p1 { background: var(--blue); color: #fff; }
+  .priority-badge.p2 { background: var(--amber); color: #fff; }
+  .priority-badge.p3 { background: #F1F5F9; color: var(--text-secondary); border: 1px solid var(--border); }
+  .priority-btn {
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--blue);
+    font-size: 11px;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .priority-btn:hover:not(:disabled) { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .priority-btn:disabled { color: var(--border); cursor: not-allowed; }
+  .card-summary {
+    font-size: clamp(0.75rem, 1.2vw, 0.82rem);
+    color: var(--text-secondary);
+    line-height: 1.55;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .card-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--blue-tint);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  .card-link {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--blue);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: gap 0.15s;
+  }
+  .card-link:hover { gap: 6px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.55);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(12px, 2vw, 24px);
+    backdrop-filter: blur(2px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-panel {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modal-in 0.25s ease;
+    border: 1px solid var(--border);
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: clamp(20px, 3vw, 28px) clamp(20px, 3vw, 28px) 16px;
+    border-bottom: 1px solid var(--border);
+    border-left: 8px solid var(--navy);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    position: relative;
+  }
+  .modal-title-group { flex: 1; min-width: 0; }
+  .modal-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .modal-title {
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    font-weight: 800;
+    color: var(--navy);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .modal-close {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--navy);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .modal-close:hover { background: #FEE2E2; border-color: var(--red); color: var(--red); }
+  .modal-guide-btn {
+    position: absolute;
+    top: 16px;
+    right: 52px;
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid var(--blue);
+    border-radius: 50%;
+    background: var(--blue-tint);
+    color: var(--blue);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    transition: background 0.15s;
+  }
+  .modal-guide-btn:hover { background: var(--blue); color: #fff; }
+  .modal-body {
+    padding: clamp(16px, 3vw, 24px) clamp(20px, 3vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .modal-section { display: flex; flex-direction: column; gap: 8px; }
+  .modal-section-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding-left: 8px;
+    border-left: 2px solid var(--blue);
+  }
+  .modal-section-heading svg { color: var(--blue); }
+  .modal-text {
+    font-size: clamp(0.83rem, 1.3vw, 0.9rem);
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+  .how-it-works-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .how-it-works-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: clamp(0.83rem, 1.3vw, 0.9rem);
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .check-circle {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .check-circle svg { color: #fff; }
+  .meta-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 120px;
+  }
+  .meta-item svg { color: var(--blue); flex-shrink: 0; }
+  .meta-item-content { display: flex; flex-direction: column; gap: 2px; }
+  .meta-item-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .meta-item-value { font-size: clamp(0.78rem, 1.2vw, 0.85rem); font-weight: 600; color: var(--navy); }
+  .complexity-selector {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .complexity-opt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .complexity-opt.active.low { border-color: var(--green); color: var(--green); background: #F0FDF4; }
+  .complexity-opt.active.medium { border-color: var(--amber); color: var(--amber); background: #FFFBEB; }
+  .complexity-opt.active.high { border-color: var(--red); color: var(--red); background: #FEF2F2; }
+  .complexity-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+  }
+  .modal-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+  .feedback-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 4px;
+  }
+  .feedback-label {
+    font-size: clamp(0.83rem, 1.3vw, 0.9rem);
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .feedback-btns {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .feedback-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: var(--font);
+    font-size: clamp(0.83rem, 1.3vw, 0.9rem);
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .feedback-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-tint); }
+  .feedback-btn.active-up { background: #ECFDF5; border-color: var(--green); color: var(--green); }
+  .feedback-btn.active-down { background: #FEF2F2; border-color: var(--red); color: var(--red); }
+
+  /* ── GUIDE ROBOT ── */
+  .guide-fab {
+    position: fixed;
+    bottom: clamp(16px, 3vw, 28px);
+    right: clamp(16px, 3vw, 28px);
+    z-index: 150;
+  }
+  .guide-btn {
+    width: clamp(48px, 7vw, 58px);
+    height: clamp(48px, 7vw, 58px);
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--blue);
+    color: var(--blue);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    animation: guide-pulse 3s ease-in-out 1s 3;
+  }
+  .guide-btn:hover {
+    background: var(--blue);
+    color: #fff;
+    transform: scale(1.08);
+    box-shadow: 0 8px 24px rgba(37,99,235,0.3);
+  }
+  @keyframes guide-pulse {
+    0%,100% { box-shadow: var(--shadow-md); }
+    50% { box-shadow: 0 0 0 8px rgba(37,99,235,0.12), var(--shadow-md); }
+  }
+  .guide-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: clamp(220px, 40vw, 300px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-lg);
+    font-size: clamp(0.78rem, 1.3vw, 0.85rem);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    z-index: 10;
+  }
+  .guide-tooltip.open { display: block; }
+  .guide-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 18px;
+    width: 14px; height: 14px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    transform: rotate(45deg);
+  }
+  .guide-tooltip-title {
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+    font-size: clamp(0.8rem, 1.3vw, 0.88rem);
+  }
+
+  /* ── UTIL ── */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══ APP HEADER ═══ -->
+<header class="app-header" id="app-header">
+  <div class="app-logo">Strategy Unbounded</div>
+  <div class="step-indicator">
+    <span class="step-label" id="step-label">Step 1 of 4</span>
+    <div class="step-dots">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+      <div class="step-dot" id="dot-4"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SCREEN 1: INTRODUCTION                 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen active" id="screen-1">
+  <div class="intro-layout">
+
+    <!-- Avatar column -->
+    <div class="intro-avatar-col">
+      <div class="avatar-card">
+        <div class="avatar-image-area">
+          <img id="avatar-img" src="" alt="AI Guide" onerror="this.style.display='none'">
+          <div class="avatar-svg-fallback">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="40" cy="26" r="16" stroke="#1E3A5F" stroke-width="2.5"/>
+              <path d="M14 72c0-14.359 11.64-26 26-26s26 11.641 26 26" stroke="#1E3A5F" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="34" cy="23" r="2.5" fill="#2563EB"/>
+              <circle cx="46" cy="23" r="2.5" fill="#2563EB"/>
+              <path d="M34 31 Q40 35 46 31" stroke="#2563EB" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <div class="avatar-card-footer">
+          <span class="avatar-label">Your AI Guide</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content column -->
+    <div class="intro-content-col">
+      <div>
+        <div class="intro-eyebrow">Part 1 — AI Use Case Discovery</div>
+        <h1 class="intro-heading">Welcome to<br>Strategy Unbounded</h1>
+      </div>
+
+      <div class="speech-bubble">
+        <p class="speech-text" id="speech-text"><span id="speech-content"></span><span class="cursor-blink" id="cursor"></span></p>
+      </div>
+
+      <button class="btn-primary" id="begin-btn" disabled onclick="showScreen(2)">
+        I'm Ready — Start Activity
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SCREEN 2: PROBLEM INPUT                -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen" id="screen-2">
+  <div class="input-container">
+    <h2 class="screen-heading">What are your 5 key challenges?</h2>
+    <p class="screen-subtext">Describe each problem clearly. Our AI agents will generate targeted solutions for every one.</p>
+
+    <div class="problem-rows" id="problem-rows">
+      <!-- Generated by JS -->
+    </div>
+
+    <button class="btn-primary" id="submit-btn" disabled onclick="handleSubmit()" style="max-width:340px;">
+      Analyse with AI
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Guide -->
+  <div class="guide-fab" id="guide-2">
+    <div class="guide-tooltip" id="guide-tooltip-2">
+      <div class="guide-tooltip-title">💡 Tips for good input</div>
+      Describe each problem as a specific business challenge — what's going wrong, where, and what impact it has on the business.
+    </div>
+    <button class="guide-btn" onclick="toggleGuide('guide-tooltip-2')" title="Get guidance">
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="13" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.5"/>
+        <line x1="20" y1="13" x2="20" y2="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="20" cy="5.5" r="2" fill="currentColor"/>
+        <circle cx="14.5" cy="21" r="2.5" fill="currentColor"/>
+        <circle cx="25.5" cy="21" r="2.5" fill="currentColor"/>
+        <path d="M14 29 Q20 33 26 29" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SCREEN 3: PROCESSING                   -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen processing-screen" id="screen-3">
+  <div class="processing-card">
+    <div class="processing-wordmark">Strategy Unbounded</div>
+    <h2 class="processing-heading">AI Analysis in Progress</h2>
+
+    <div class="agent-nodes">
+      <div class="agent-node">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/>
+        </svg>
+        <span class="agent-node-label">Agent 01</span>
+        <div class="agent-dot"></div>
+      </div>
+      <div class="agent-node">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14Z"/>
+          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14Z"/>
+        </svg>
+        <span class="agent-node-label">Agent 02</span>
+        <div class="agent-dot"></div>
+      </div>
+      <div class="agent-node">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span class="agent-node-label">Agent 03</span>
+        <div class="agent-dot"></div>
+      </div>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div class="processing-status" id="processing-status">Parsing your challenges…</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SCREEN 4: RESULTS                      -->
+<!-- ═══════════════════════════════════════ -->
+<div class="screen" id="screen-4">
+  <div class="results-container">
+    <div class="results-header-row">
+      <h2 class="screen-heading" style="margin-bottom:0;">AI Use Cases</h2>
+    </div>
+    <div class="summary-bar">
+      <span class="summary-badge">15 Use Cases</span>
+      <span class="summary-bar-text">identified across your 5 challenges — click any card to explore in full detail</span>
+    </div>
+    <div id="results-sections"></div>
+  </div>
+
+  <!-- Guide -->
+  <div class="guide-fab" id="guide-4">
+    <div class="guide-tooltip" id="guide-tooltip-4">
+      <div class="guide-tooltip-title">🗂 Reviewing use cases</div>
+      Click any card to view full details. Use ▲ ▼ to adjust its priority ranking based on your business context.
+    </div>
+    <button class="guide-btn" onclick="toggleGuide('guide-tooltip-4')" title="Get guidance">
+      <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+        <rect x="8" y="13" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.5"/>
+        <line x1="20" y1="13" x2="20" y2="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="20" cy="5.5" r="2" fill="currentColor"/>
+        <circle cx="14.5" cy="21" r="2.5" fill="currentColor"/>
+        <circle cx="25.5" cy="21" r="2.5" fill="currentColor"/>
+        <path d="M14 29 Q20 33 26 29" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CARD DETAIL MODAL                      -->
+<!-- ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel" id="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div class="modal-eyebrow" id="modal-eyebrow">Use Case Detail</div>
+        <div class="modal-title" id="modal-title">Title</div>
+      </div>
+      <button class="modal-guide-btn" onclick="toggleGuide('modal-guide-tooltip')" title="Guidance">?
+        <div class="guide-tooltip" id="modal-guide-tooltip" style="bottom:calc(100% + 8px);right:0;position:absolute;">
+          <div class="guide-tooltip-title">📋 What to look for</div>
+          Review all details carefully. Your thumbs feedback helps prioritise which use cases to take forward.
+        </div>
+      </button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-heading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Description
+        </div>
+        <p class="modal-text" id="modal-description"></p>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-heading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          How It Works
+        </div>
+        <ul class="how-it-works-list" id="modal-how-it-works"></ul>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-heading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.657-4.03 3-9 3s-9-1.343-9-3"/><path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/></svg>
+          Data Required
+        </div>
+        <p class="modal-text" id="modal-data"></p>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <div class="meta-item-content">
+            <span class="meta-item-label">Time to Implement</span>
+            <span class="meta-item-value" id="modal-time"></span>
+          </div>
+        </div>
+        <div class="meta-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <div class="meta-item-content">
+            <span class="meta-item-label">Cost &amp; ROI</span>
+            <span class="meta-item-value" id="modal-roi"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-heading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Complexity
+        </div>
+        <div class="complexity-selector" id="modal-complexity"></div>
+      </div>
+
+      <hr class="modal-divider">
+
+      <div class="feedback-row">
+        <div class="feedback-label">Is this use case relevant to your business?</div>
+        <div class="feedback-btns">
+          <button class="feedback-btn" id="feedback-up" onclick="setFeedback('up')">
+            👍 Yes, it's interesting
+          </button>
+          <button class="feedback-btn" id="feedback-down" onclick="setFeedback('down')">
+            👎 Not applicable for us
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────
+const API_KEY  = 'YOUR_OPENAI_API_KEY';
+const ENDPOINT = 'YOUR_OPENAI_ENDPOINT';
+
+// ── STATE ──────────────────────────────────────
+let problems    = [];
+let useCases    = [];
+let priorities  = {};   // id → priority (1|2|3)
+let feedbacks   = {};   // id → 'up'|'down'|null
+let activeCard  = null;
+
+// ── MOCK DATA ──────────────────────────────────
+const MOCK_PROBLEMS = [
+  "Manual invoice processing takes 3 days and is error-prone",
+  "High customer churn rate with no early warning system",
+  "Supply chain disruptions causing stock-outs",
+  "Slow recruitment process losing top candidates",
+  "Regulatory compliance monitoring done manually"
+];
+
+const MOCK_USE_CASES = [
+  { id:0, problem_index:0, priority:1, title:"Intelligent Invoice Processing",
+    summary:"Automate extraction, validation and routing of invoices using computer vision and NLP.",
+    description:"An AI-powered document pipeline ingests invoices from any format — PDF, image, or email — and extracts key fields with over 97% accuracy. Validated entries are automatically routed to the correct approver based on business rules, eliminating manual touchpoints and reducing processing time from days to minutes.",
+    how_it_works:["OCR engine captures invoice data from scanned documents and PDFs","NLP model extracts vendor, amount, line items and due dates","Rules engine validates against ERP purchase orders and flags anomalies","Approved invoices auto-post to accounting system; exceptions routed to humans"],
+    data_required:"Historical invoices (PDF/images), ERP purchase orders, vendor master data, approval workflows",
+    time_to_implement:"3–4 months for MVP", complexity:"Medium", cost_roi:"£70k build cost; 4× ROI within 12 months through headcount redeployment" },
+  { id:1, problem_index:0, priority:2, title:"Accounts Payable Automation",
+    summary:"End-to-end AP workflow automation with AI-driven matching and exception handling.",
+    description:"AI matches supplier invoices to purchase orders and goods receipts in real time, achieving three-way matching without manual intervention. Discrepancies are flagged and resolved through an intelligent exception queue, reducing days payable outstanding and capturing early-payment discounts.",
+    how_it_works:["Automated three-way match across PO, GRN and invoice","ML model learns historical approval patterns to auto-approve routine transactions","Exception scoring ranks discrepancies by risk and routes to appropriate reviewers","Real-time dashboard tracks AP liability, DPO and discount capture rates"],
+    data_required:"Purchase orders, goods receipt notes, supplier invoices, vendor payment terms",
+    time_to_implement:"4–6 months", complexity:"Medium", cost_roi:"£90k; saves £200k+ annually in early-payment discounts and processing costs" },
+  { id:2, problem_index:0, priority:3, title:"Vendor Risk Scoring AI",
+    summary:"Continuously assess supplier financial health and delivery reliability using live data signals.",
+    description:"A risk intelligence engine aggregates financial filings, news sentiment, delivery performance records and geopolitical indicators to produce a live risk score for every supplier. Procurement teams receive proactive alerts before a supplier fails, enabling contingency sourcing.",
+    how_it_works:["Web scraper and API feeds pull financial reports and news daily","NLP sentiment model analyses news for supplier-specific risk signals","Delivery history and quality data integrated from ERP","Composite risk score updates nightly; alerts sent via email or Teams"],
+    data_required:"Supplier financial data, news feeds, ERP delivery history, quality metrics",
+    time_to_implement:"3–5 months", complexity:"High", cost_roi:"£110k; avoids estimated £500k+ annual supply disruption costs" },
+
+  { id:3, problem_index:1, priority:1, title:"Customer Churn Prediction",
+    summary:"Identify at-risk customers weeks in advance using behavioural and transactional signals.",
+    description:"A machine learning model trains on historical customer behaviour — usage frequency, support interactions, payment patterns and engagement — to produce a daily churn probability score for every account. Customer success teams receive prioritised intervention lists, enabling proactive outreach before customers decide to leave.",
+    how_it_works:["Feature engineering from CRM, product usage logs and billing data","Gradient boosting model trained on 24-month churn history","Daily scoring pipeline produces ranked intervention list by churn risk","Integration with CRM automatically creates follow-up tasks for high-risk accounts"],
+    data_required:"CRM records, product usage logs, support tickets, billing history (24+ months)",
+    time_to_implement:"2–3 months", complexity:"Medium", cost_roi:"£60k; 10% reduction in churn = £1.2M annual revenue retained (est.)" },
+  { id:4, problem_index:1, priority:2, title:"AI Customer Support Agent",
+    summary:"Handle 60–80% of tier-1 support queries instantly with a conversational AI agent.",
+    description:"A large language model trained on product documentation, past resolved tickets and knowledge-base articles handles routine customer enquiries 24/7. Complex cases are seamlessly escalated to human agents with full context, reducing average handle time and improving first-contact resolution rates.",
+    how_it_works:["LLM fine-tuned on historical support conversations and product documentation","Intent classifier routes queries to appropriate response flow","Escalation logic detects frustration signals and transfers to human with summary","Feedback loop: resolved tickets continuously improve model responses"],
+    data_required:"Support ticket history, product documentation, knowledge base articles, resolution outcomes",
+    time_to_implement:"2–4 months", complexity:"Low", cost_roi:"£50k; deflects 65% of tier-1 tickets, saving £180k/year in support costs" },
+  { id:5, problem_index:1, priority:3, title:"Sentiment Analysis Pipeline",
+    summary:"Track customer sentiment across all channels in real time to detect emerging dissatisfaction.",
+    description:"An NLP pipeline continuously analyses customer reviews, support chats, social media mentions and NPS survey responses to produce a unified sentiment score by product, region and customer segment. Alerts trigger when sentiment drops below threshold, enabling rapid response before issues escalate.",
+    how_it_works:["Connectors ingest data from review sites, social APIs and CRM","Fine-tuned sentiment model classifies tone and extracts key themes","Trend engine detects statistically significant drops in sentiment score","Weekly report highlights top complaint categories and recommended actions"],
+    data_required:"Customer reviews, social media feeds, NPS responses, support chat transcripts",
+    time_to_implement:"2–3 months", complexity:"Low", cost_roi:"£40k; enables proactive interventions estimated to retain £300k in at-risk revenue" },
+
+  { id:6, problem_index:2, priority:1, title:"Supply Chain Demand Forecasting",
+    summary:"Predict demand 8–12 weeks ahead using AI to eliminate stock-outs and overstock.",
+    description:"A deep learning forecasting model combines historical sales data, seasonal patterns, promotions, economic indicators and supplier lead times to produce SKU-level demand forecasts. The model updates weekly and feeds directly into purchasing and production planning, reducing stock-outs by up to 40%.",
+    how_it_works:["Time-series model ingests 3+ years of sales history and external signals","Promotional calendar and seasonality adjustments applied automatically","Forecast outputs integrated into ERP replenishment module","Exception alerts highlight SKUs with unusually high forecast uncertainty"],
+    data_required:"Sales history (3+ years), promotional calendars, supplier lead times, ERP stock levels",
+    time_to_implement:"3–5 months", complexity:"Medium", cost_roi:"£85k; reduces stock-out losses by est. £400k/year and overstock write-downs by £150k" },
+  { id:7, problem_index:2, priority:2, title:"Inventory Anomaly Detection",
+    summary:"Detect shrinkage, miscounts and system errors in inventory data before they compound.",
+    description:"An anomaly detection model monitors real-time inventory movements against expected patterns, flagging statistically unusual events — sudden drops, phantom stock, or counting errors — for immediate investigation. Early detection prevents small discrepancies from becoming major write-offs.",
+    how_it_works:["Statistical baseline built from 12 months of inventory movement data","Isolation forest model flags deviations exceeding 2-sigma threshold","Anomaly queue in warehouse management system for immediate investigation","Monthly trend report identifies chronic anomaly locations or product categories"],
+    data_required:"WMS inventory movements, RFID or barcode scan logs, cycle count records",
+    time_to_implement:"2–3 months", complexity:"Low", cost_roi:"£45k; expected to reduce inventory discrepancy write-offs by £200k annually" },
+  { id:8, problem_index:2, priority:3, title:"Logistics Route Optimisation",
+    summary:"Reduce last-mile delivery costs and lead times using dynamic AI route planning.",
+    description:"An optimisation engine uses vehicle routing algorithms enhanced by machine learning to compute cost-optimal delivery routes in real time, accounting for traffic, vehicle capacity, time windows and driver hours. Dynamic re-routing adapts to disruptions throughout the day.",
+    how_it_works:["Order data and constraints ingested at start of dispatch window","AI solver computes optimal routes considering 15+ constraint types","Driver app displays routes and receives live re-routing instructions","Analytics dashboard tracks on-time delivery rate, cost-per-delivery and CO₂"],
+    data_required:"Order locations, vehicle fleet data, driver availability, historical traffic patterns",
+    time_to_implement:"3–4 months", complexity:"Medium", cost_roi:"£75k; 12–18% reduction in last-mile costs, saving est. £250k annually" },
+
+  { id:9, problem_index:3, priority:1, title:"AI Candidate Screening",
+    summary:"Reduce time-to-shortlist from weeks to hours using AI CV screening and ranking.",
+    description:"An AI screening engine parses CVs and application forms, extracts relevant skills and experience, and scores candidates against a calibrated job profile. Ranked shortlists are presented to recruiters within minutes of application, eliminating the hours spent on initial CV review and ensuring no qualified candidate is overlooked.",
+    how_it_works:["NLP parser extracts skills, experience, education and tenure from CVs","Matching model scores candidates against job profile criteria","Bias mitigation layer ensures demographic-neutral ranking","Recruiter dashboard shows ranked list with explainable match rationale"],
+    data_required:"Historical CVs, job descriptions, hiring outcomes (accepted/rejected decisions)",
+    time_to_implement:"2–4 months", complexity:"Medium", cost_roi:"£65k; cuts screening time by 75%, freeing 3 recruiter-days per role" },
+  { id:10, problem_index:3, priority:2, title:"Employee Productivity Coach",
+    summary:"Deliver personalised performance nudges and learning recommendations to each employee.",
+    description:"An AI coach analyses individual productivity patterns, skills gaps and career goals to deliver personalised daily nudges — recommended learning resources, task prioritisation tips and wellbeing check-ins — through the employee's existing tools (Teams, Slack or email). Managers receive aggregated team insights without individual surveillance.",
+    how_it_works:["Integration with work tools to understand activity patterns (privacy-preserving)","Skills gap model compares current vs. role-required competencies","Recommendation engine surfaces relevant L&D content and micro-tasks","Weekly manager digest shows team engagement and skills development trends"],
+    data_required:"HR skills data, LMS completion records, calendar and task metadata (anonymised)",
+    time_to_implement:"4–6 months", complexity:"High", cost_roi:"£100k; 15% improvement in L&D completion rates and measurable productivity uplift" },
+  { id:11, problem_index:3, priority:3, title:"Knowledge Graph Assistant",
+    summary:"Make institutional knowledge instantly searchable with an AI-powered internal Q&A system.",
+    description:"A retrieval-augmented AI assistant indexes internal documents, wikis, policies and past project outputs to answer employee questions in natural language. Instead of searching through SharePoint folders, employees ask a question and receive an accurate, sourced answer in seconds — reducing knowledge-seeking time and preserving expertise when employees leave.",
+    how_it_works:["Document crawler indexes SharePoint, Confluence, email attachments and PDFs","Embedding model converts documents into a searchable vector knowledge base","LLM generates answers grounded strictly in indexed documents with citations","Continuous re-indexing ensures knowledge base stays current"],
+    data_required:"Internal documents, wikis, policies, project reports, FAQs",
+    time_to_implement:"2–3 months", complexity:"Low", cost_roi:"£55k; saves est. 45 minutes per employee per week in knowledge retrieval" },
+
+  { id:12, problem_index:4, priority:1, title:"Real-Time Compliance Monitor",
+    summary:"Continuously monitor transactions and processes for regulatory violations before they occur.",
+    description:"An AI compliance engine monitors transactional and operational data streams in real time, applying regulatory rule sets to flag potential violations as they occur rather than in retrospect. Compliance officers receive immediate alerts with evidence and recommended remediation actions, reducing regulatory risk and audit findings.",
+    how_it_works:["Rule engine maps regulatory requirements to specific data fields and thresholds","ML model learns patterns associated with past compliance breaches","Real-time alerting pipeline with severity scoring and escalation routing","Audit-ready evidence pack automatically generated for each flag"],
+    data_required:"Transaction records, regulatory rule library, past audit findings, operational logs",
+    time_to_implement:"4–6 months", complexity:"High", cost_roi:"£120k; reduces regulatory fine exposure and estimated audit remediation costs of £500k+" },
+  { id:13, problem_index:4, priority:2, title:"Financial Risk Scoring",
+    summary:"Assess credit, market and operational risk in real time using AI-driven risk models.",
+    description:"A multi-factor AI risk engine aggregates internal financial data, market signals and counterparty information to produce real-time risk scores across credit, liquidity and operational risk dimensions. Risk officers receive consolidated dashboards replacing spreadsheet-based reporting with live, model-driven insights.",
+    how_it_works:["Data integration from core banking, market data feeds and external credit bureaus","Ensemble model combines credit scoring, market volatility and operational indicators","Risk score dashboard updates in near-real-time with drill-down to underlying factors","Stress testing module simulates portfolio impact under regulatory scenarios"],
+    data_required:"Transaction history, market data feeds, counterparty financials, credit bureau data",
+    time_to_implement:"5–7 months", complexity:"High", cost_roi:"£140k; improves risk-adjusted returns by identifying 20% more high-risk exposures earlier" },
+  { id:14, problem_index:4, priority:3, title:"Revenue Optimisation Engine",
+    summary:"Identify untapped revenue opportunities using AI analysis of pricing, mix and customer data.",
+    description:"A revenue intelligence platform analyses pricing elasticity, customer segment profitability and product mix to surface actionable optimisation opportunities — where to raise prices without volume loss, which customers to upsell, and which products to bundle. Commercial teams receive weekly opportunity lists ranked by revenue impact.",
+    how_it_works:["Elasticity model built from transaction data across price points and segments","Profitability analysis segments customers by true margin contribution","Upsell propensity model identifies accounts likely to expand","Opportunity dashboard ranks actions by estimated revenue impact"],
+    data_required:"Transaction history, pricing data, customer segmentation, product margins",
+    time_to_implement:"3–5 months", complexity:"Medium", cost_roi:"£90k; identifies £600k–£1.2M in addressable revenue optimisation opportunities" }
+];
+
+// ── NAVIGATION ─────────────────────────────────
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + n).classList.add('active');
+
+  const labels = ['Step 1 of 4','Step 2 of 4','Step 3 of 4','Step 4 of 4'];
+  document.getElementById('step-label').textContent = labels[n-1];
+
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.toggle('active', i <= n);
+  }
+}
+
+// ── TYPEWRITER ─────────────────────────────────
+const SPEECH = "Welcome to Strategy Unbounded. Your task today is to identify five real problems your organisation faces — challenges, inefficiencies, risks, or opportunities being missed. Once you've shared those problems, our AI agents will brainstorm powerful AI-driven solutions for each one. Take a moment to reflect. When you're ready, click below to begin.";
+
+function startTypewriter() {
+  const el = document.getElementById('speech-content');
+  const cursor = document.getElementById('cursor');
+  const btn = document.getElementById('begin-btn');
+  const words = SPEECH.split(' ');
+  let i = 0;
+  const interval = setInterval(() => {
+    el.textContent += (i === 0 ? '' : ' ') + words[i];
+    i++;
+    if (i >= words.length) {
+      clearInterval(interval);
+      cursor.style.display = 'none';
+      btn.disabled = false;
+    }
+  }, 60);
+}
+
+// ── PROBLEM INPUT FORM ─────────────────────────
+function buildProblemRows() {
+  const container = document.getElementById('problem-rows');
+  const placeholders = [
+    "e.g. Manual invoice processing takes 3 days and is error-prone…",
+    "e.g. We have no early warning system for customer churn…",
+    "e.g. Supply chain disruptions are causing recurring stock-outs…",
+    "e.g. Our recruitment process is too slow and we lose top candidates…",
+    "e.g. Compliance monitoring is entirely manual and reactive…"
+  ];
+  for (let i = 0; i < 5; i++) {
+    container.innerHTML += `
+      <div class="problem-row" id="row-${i}">
+        <div class="problem-number" id="num-${i}">0${i+1}</div>
+        <div class="textarea-wrap">
+          <textarea class="problem-textarea" id="prob-${i}" maxlength="300"
+            placeholder="${placeholders[i]}"
+            oninput="onProblemInput(${i})"></textarea>
+          <span class="char-count" id="count-${i}">0 / 300</span>
+        </div>
+      </div>`;
+  }
+}
+
+function onProblemInput(i) {
+  const ta = document.getElementById('prob-' + i);
+  const count = document.getElementById('count-' + i);
+  const row = document.getElementById('row-' + i);
+  const num = document.getElementById('num-' + i);
+  count.textContent = ta.value.length + ' / 300';
+  row.classList.toggle('filled', ta.value.trim().length >= 10);
+  num.style.background = ta.value.trim().length >= 10 ? 'var(--blue)' : '';
+  num.style.color = ta.value.trim().length >= 10 ? '#fff' : '';
+  validateForm();
+}
+
+function validateForm() {
+  let all = true;
+  for (let i = 0; i < 5; i++) {
+    const val = (document.getElementById('prob-' + i)||{}).value || '';
+    if (val.trim().length < 10) { all = false; break; }
+  }
+  document.getElementById('submit-btn').disabled = !all;
+}
+
+// ── SUBMIT & PROCESS ───────────────────────────
+async function handleSubmit() {
+  problems = [];
+  for (let i = 0; i < 5; i++) problems.push(document.getElementById('prob-' + i).value.trim());
+  showScreen(3);
+  startProcessingAnimation();
+  const results = await callLLM(problems);
+  useCases = results;
+  results.forEach(uc => { priorities[uc.id] = uc.priority; feedbacks[uc.id] = null; });
+  renderResults(useCases, problems);
+  showScreen(4);
+}
+
+function startProcessingAnimation() {
+  const statuses = ["Parsing your challenges…","Generating AI frameworks…","Ranking by impact…","Compiling your report…"];
+  let i = 0;
+  const el = document.getElementById('processing-status');
+  const iv = setInterval(() => {
+    i = (i + 1) % statuses.length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = statuses[i]; el.style.opacity = '1'; }, 200);
+  }, 3000);
+  setTimeout(() => clearInterval(iv), 12000);
+}
+
+async function callLLM(probs) {
+  if (API_KEY === 'YOUR_OPENAI_API_KEY') return useMockData(probs);
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${API_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{
+          role: 'system',
+          content: 'You are a strategic AI consultant. Given 5 company problems, generate exactly 3 AI-powered use cases per problem (15 total). Return a JSON object with key "use_cases" containing an array of 15 objects. Each object must have: id (0-14), problem_index (0-4), title (string), summary (one sentence), description (2-3 sentences), how_it_works (array of 4 bullet strings), data_required (string), time_to_implement (string), complexity ("Low"|"Medium"|"High"), cost_roi (string), priority (1=highest impact, 2=medium, 3=lower — one of each per problem).'
+        },{
+          role: 'user',
+          content: 'Here are 5 company problems:\n' + probs.map((p,i) => `${i+1}. ${p}`).join('\n') + '\n\nGenerate 3 AI use cases for each problem.'
+        }],
+        response_format: { type: 'json_object' }
+      })
+    });
+    const data = await res.json();
+    const parsed = JSON.parse(data.choices[0].message.content);
+    return parsed.use_cases || parsed;
+  } catch(e) {
+    console.warn('LLM call failed, using mock data:', e);
+    return useMockData(probs);
+  }
+}
+
+function useMockData(probs) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const mapped = MOCK_USE_CASES.map((uc, i) => ({
+        ...uc,
+        problem_text: probs[uc.problem_index] || MOCK_PROBLEMS[uc.problem_index]
+      }));
+      resolve(mapped);
+    }, 3500);
+  });
+}
+
+// ── RENDER RESULTS ─────────────────────────────
+function renderResults(cases, probs) {
+  const container = document.getElementById('results-sections');
+  container.innerHTML = '';
+  for (let pi = 0; pi < 5; pi++) {
+    const problemCases = cases.filter(uc => uc.problem_index === pi);
+    const probText = (probs && probs[pi]) ? probs[pi] : (MOCK_PROBLEMS[pi] || `Problem ${pi+1}`);
+    const truncated = probText.length > 80 ? probText.slice(0,77)+'…' : probText;
+
+    const section = document.createElement('div');
+    section.className = 'problem-section';
+    section.innerHTML = `
+      <div class="section-header" id="sec-hdr-${pi}" onclick="toggleSection(${pi})">
+        <div class="section-header-left">
+          <div class="section-problem-num">${String(pi+1).padStart(2,'0')}</div>
+          <div class="section-problem-text" title="${probText}">${truncated}</div>
+        </div>
+        <svg class="chevron-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="section-cards" id="sec-cards-${pi}">
+        ${problemCases.map(uc => renderCard(uc)).join('')}
+      </div>`;
+    container.appendChild(section);
+  }
+}
+
+function renderCard(uc) {
+  const p = priorities[uc.id] || uc.priority;
+  const pClass = ['','p1','p2','p3'][p];
+  const pLabel = ['','Priority 1','Priority 2','Priority 3'][p];
+  const upDisabled = p <= 1 ? 'disabled' : '';
+  const downDisabled = p >= 3 ? 'disabled' : '';
+  return `
+    <div class="use-case-card" id="card-${uc.id}" onclick="openModal(${uc.id})">
+      <div class="card-top-stripe"></div>
+      <div class="card-body">
+        <div class="card-header-row">
+          <div class="card-title">${uc.title}</div>
+          <div class="card-controls" onclick="event.stopPropagation()">
+            <div class="priority-badge ${pClass}" id="badge-${uc.id}">${pLabel}</div>
+            <button class="priority-btn" id="up-${uc.id}" ${upDisabled} onclick="changePriority(${uc.id},-1)">▲</button>
+            <button class="priority-btn" id="dn-${uc.id}" ${downDisabled} onclick="changePriority(${uc.id},1)">▼</button>
+          </div>
+        </div>
+        <div class="card-summary">${uc.summary}</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-link">View Details <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+    </div>`;
+}
+
+// ── PRIORITY ───────────────────────────────────
+function changePriority(id, delta) {
+  const current = priorities[id] || 1;
+  const next = Math.min(3, Math.max(1, current + delta));
+  if (next === current) return;
+  priorities[id] = next;
+  const pClass = ['','p1','p2','p3'][next];
+  const pLabel = ['','Priority 1','Priority 2','Priority 3'][next];
+  const badge = document.getElementById('badge-' + id);
+  const upBtn = document.getElementById('up-' + id);
+  const dnBtn = document.getElementById('dn-' + id);
+  badge.className = 'priority-badge ' + pClass;
+  badge.textContent = pLabel;
+  upBtn.disabled = next <= 1;
+  dnBtn.disabled = next >= 3;
+}
+
+// ── SECTION COLLAPSE ───────────────────────────
+function toggleSection(pi) {
+  const hdr = document.getElementById('sec-hdr-' + pi);
+  const cards = document.getElementById('sec-cards-' + pi);
+  const collapsed = cards.classList.toggle('collapsed');
+  hdr.classList.toggle('collapsed', collapsed);
+}
+
+// ── MODAL ──────────────────────────────────────
+function openModal(id) {
+  activeCard = id;
+  const uc = useCases.find(u => u.id === id);
+  if (!uc) return;
+  const probText = uc.problem_text || MOCK_PROBLEMS[uc.problem_index] || '';
+  const truncated = probText.length > 60 ? probText.slice(0,57)+'…' : probText;
+  document.getElementById('modal-eyebrow').textContent = 'Re: ' + truncated;
+  document.getElementById('modal-title').textContent = uc.title;
+  document.getElementById('modal-description').textContent = uc.description;
+  document.getElementById('modal-data').textContent = uc.data_required;
+  document.getElementById('modal-time').textContent = uc.time_to_implement;
+  document.getElementById('modal-roi').textContent = uc.cost_roi;
+
+  const howList = document.getElementById('modal-how-it-works');
+  howList.innerHTML = (uc.how_it_works || []).map(item => `
+    <li>
+      <div class="check-circle">
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span>${item}</span>
+    </li>`).join('');
+
+  const complexEl = document.getElementById('modal-complexity');
+  const levels = ['Low','Medium','High'];
+  complexEl.innerHTML = levels.map(l => {
+    const cls = l.toLowerCase();
+    const isActive = uc.complexity === l ? 'active ' + cls : '';
+    return `<div class="complexity-opt ${isActive}"><span class="complexity-dot"></span>${l}</div>`;
+  }).join('');
+
+  const fb = feedbacks[id];
+  document.getElementById('feedback-up').className = 'feedback-btn' + (fb === 'up' ? ' active-up' : '');
+  document.getElementById('feedback-down').className = 'feedback-btn' + (fb === 'down' ? ' active-down' : '');
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('modal-guide-tooltip').classList.remove('open');
+  activeCard = null;
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+// ── FEEDBACK ───────────────────────────────────
+function setFeedback(type) {
+  if (activeCard === null) return;
+  if (feedbacks[activeCard] === type) {
+    feedbacks[activeCard] = null;
+    document.getElementById('feedback-up').className = 'feedback-btn';
+    document.getElementById('feedback-down').className = 'feedback-btn';
+  } else {
+    feedbacks[activeCard] = type;
+    document.getElementById('feedback-up').className = 'feedback-btn' + (type === 'up' ? ' active-up' : '');
+    document.getElementById('feedback-down').className = 'feedback-btn' + (type === 'down' ? ' active-down' : '');
+  }
+}
+
+// ── GUIDE TOOLTIP ──────────────────────────────
+function toggleGuide(id) {
+  const tip = document.getElementById(id);
+  if (!tip) return;
+  const isOpen = tip.classList.contains('open');
+  document.querySelectorAll('.guide-tooltip.open').forEach(t => t.classList.remove('open'));
+  if (!isOpen) tip.classList.add('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.guide-fab') && !e.target.closest('.modal-guide-btn')) {
+    document.querySelectorAll('.guide-tooltip.open').forEach(t => t.classList.remove('open'));
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── INIT ───────────────────────────────────────
+function init() {
+  buildProblemRows();
+  startTypewriter();
+}
+init();
+</script>
+</body>
+</html>

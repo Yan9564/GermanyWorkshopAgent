@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strategy Unbounded — Warm Amber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #FFFBF0;
+  --card: #FFFFFF;
+  --section-bg: #FEF3C7;
+  --primary: #92400E;
+  --secondary: #D97706;
+  --highlight: #F59E0B;
+  --text: #1C1309;
+  --text-sec: #78350F;
+  --text-muted: #A16207;
+  --border: #FDE68A;
+  --success: #16A34A;
+  --error: #DC2626;
+  --p1: #92400E;
+  --p2: #D97706;
+  --p3: #9CA3AF;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  background: #fff;
+  border-bottom: 2px solid var(--border);
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 2.5rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.step-label {
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-right: 0.4rem;
+}
+.step-dots {
+  display: flex;
+  gap: 0.35rem;
+}
+.step-dot {
+  width: clamp(8px, 1.5vw, 11px);
+  height: clamp(8px, 1.5vw, 11px);
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+  background: transparent;
+  transition: background 0.3s;
+}
+.step-dot.active { background: var(--secondary); }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ── SCREEN 1 ── */
+#screen1 { flex-direction: column; min-height: calc(100vh - 60px); }
+.intro-body {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  min-height: 0;
+}
+.avatar-panel {
+  flex: 0 0 clamp(220px, 38%, 400px);
+  background: var(--section-bg);
+  border-right: 1.5px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem);
+  gap: 1rem;
+}
+.avatar-panel img {
+  height: clamp(260px, 45vh, 480px);
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 8px 24px rgba(146,64,14,0.12));
+}
+.avatar-label {
+  font-family: 'Source Sans 3', sans-serif;
+  font-style: italic;
+  font-size: clamp(0.75rem, 1.5vw, 0.9rem);
+  color: var(--text-muted);
+  text-align: center;
+}
+.intro-content {
+  flex: 1;
+  min-width: 280px;
+  padding: clamp(2rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3.5rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.2rem;
+}
+.intro-content h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.intro-sublabel {
+  font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+.speech-bubble {
+  background: #fff;
+  border-left: 5px solid var(--secondary);
+  border-radius: 0 12px 12px 12px;
+  padding: clamp(1rem, 2.5vw, 1.5rem) clamp(1rem, 2.5vw, 1.5rem);
+  box-shadow: 0 4px 20px rgba(146,64,14,0.08);
+  position: relative;
+  line-height: 1.7;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  color: var(--text);
+  min-height: 80px;
+}
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 0;
+  width: 0; height: 0;
+  border-top: 14px solid var(--secondary);
+  border-left: 14px solid transparent;
+}
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--secondary);
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 0.8s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+.btn-primary {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: clamp(0.7rem, 1.5vw, 1rem) clamp(1.5rem, 3vw, 2.2rem);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  align-self: flex-start;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover:not(:disabled) { background: #78350F; transform: translateY(-1px); }
+.btn-primary:disabled { background: #D1D5DB; cursor: not-allowed; color: #9CA3AF; }
+
+/* ── SCREEN 2 ── */
+#screen2 { min-height: calc(100vh - 60px); }
+.form-container {
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.form-container h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 700;
+  color: var(--text);
+}
+.form-sub {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  color: var(--text-sec);
+  margin-top: -0.5rem;
+  line-height: 1.6;
+}
+.problem-row {
+  display: flex;
+  gap: clamp(0.8rem, 2vw, 1.2rem);
+  align-items: flex-start;
+}
+.problem-num {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  color: var(--highlight);
+  background: var(--section-bg);
+  border-radius: 10px;
+  width: clamp(52px, 8vw, 68px);
+  height: clamp(52px, 8vw, 68px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+.textarea-wrap { flex: 1; position: relative; }
+.problem-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  color: var(--text);
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  line-height: 1.6;
+}
+.problem-textarea:focus {
+  outline: none;
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(217,119,6,0.15);
+}
+.char-count {
+  position: absolute;
+  bottom: 6px;
+  right: 10px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.btn-submit {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: clamp(0.8rem, 1.8vw, 1.1rem) clamp(1.8rem, 3.5vw, 2.5rem);
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+  align-self: flex-end;
+}
+.btn-submit:hover:not(:disabled) { background: #78350F; transform: translateY(-1px); }
+.btn-submit:disabled { background: #D1D5DB; cursor: not-allowed; color: #9CA3AF; }
+
+/* ── SCREEN 3 ── */
+#screen3 {
+  min-height: calc(100vh - 60px);
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+.processing-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  text-align: center;
+  max-width: 720px;
+  width: 100%;
+}
+.processing-wrap h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  color: var(--text);
+}
+.agents-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+.agent-card {
+  background: var(--section-bg);
+  border-top: 3px solid var(--secondary);
+  border-radius: 12px;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: clamp(130px, 25%, 180px);
+  box-shadow: 0 2px 12px rgba(146,64,14,0.07);
+}
+.agent-icon {
+  width: 40px; height: 40px;
+  color: var(--secondary);
+}
+.agent-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--secondary);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.agent-card:nth-child(3) .pulse-dot { animation-delay: 0.3s; }
+.agent-card:nth-child(5) .pulse-dot { animation-delay: 0.6s; }
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+.connector {
+  flex: 1;
+  min-width: 20px;
+  max-width: 60px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 6px, transparent 6px, transparent 12px);
+  position: relative;
+}
+.status-text {
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  color: var(--text-muted);
+  min-height: 1.4em;
+  font-style: italic;
+}
+.progress-track {
+  width: 100%;
+  max-width: 480px;
+  height: 6px;
+  background: var(--section-bg);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--secondary), var(--primary));
+  border-radius: 99px;
+  width: 0%;
+  animation: fillBar 4s ease-out forwards;
+}
+@keyframes fillBar { to { width: 100%; } }
+
+/* ── SCREEN 4 ── */
+#screen4 { min-height: calc(100vh - 60px); }
+.results-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.results-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 700;
+  color: var(--text);
+}
+.summary-bar {
+  background: #fff;
+  border-left: 5px solid var(--secondary);
+  border-radius: 0 10px 10px 0;
+  padding: 0.85rem 1.2rem;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
+  color: var(--text-sec);
+  box-shadow: 0 2px 8px rgba(146,64,14,0.06);
+}
+
+.problem-section { display: flex; flex-direction: column; gap: 0; }
+.section-header {
+  background: #fff;
+  border-left: 6px solid var(--secondary);
+  border-radius: 0 10px 10px 0;
+  padding: clamp(0.8rem, 2vw, 1rem) clamp(1rem, 2.5vw, 1.5rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(146,64,14,0.06);
+  user-select: none;
+  transition: background 0.2s;
+}
+.section-header:hover { background: #FFFBF0; }
+.section-label {
+  font-size: clamp(0.7rem, 1.2vw, 0.78rem);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.15rem;
+}
+.section-problem {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  font-weight: 600;
+  color: var(--text);
+}
+.chevron {
+  font-size: 1.1rem;
+  color: var(--secondary);
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+.chevron.open { transform: rotate(180deg); }
+.section-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, opacity 0.3s;
+}
+.section-body.collapsed { max-height: 0; padding: 0; opacity: 0; pointer-events: none; }
+
+/* ── CARD ── */
+.use-case-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(146,64,14,0.06);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+}
+.use-case-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(146,64,14,0.13);
+  border-color: var(--secondary);
+}
+.card-strip {
+  width: 8px;
+  flex-shrink: 0;
+  border-radius: 12px 0 0 12px;
+}
+.card-body {
+  flex: 1;
+  padding: clamp(0.9rem, 2vw, 1.2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.priority-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 99px;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-p1 { background: var(--p1); }
+.badge-p2 { background: var(--p2); }
+.badge-p3 { background: var(--p3); color: var(--text); }
+.priority-controls { display: flex; gap: 0.2rem; align-items: center; }
+.prio-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 22px; height: 22px;
+  cursor: pointer;
+  font-size: 0.65rem;
+  color: var(--secondary);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.prio-btn:hover:not(:disabled) { background: var(--section-bg); }
+.prio-btn:disabled { color: var(--border); cursor: not-allowed; }
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.88rem, 1.5vw, 1.05rem);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+.card-summary {
+  font-size: clamp(0.78rem, 1.3vw, 0.88rem);
+  color: var(--text-sec);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.card-link {
+  font-size: 0.82rem;
+  color: var(--secondary);
+  font-weight: 600;
+  text-decoration: none;
+  margin-top: auto;
+  padding-top: 0.3rem;
+}
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(28,19,9,0.5);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.modal-overlay.open { display: flex; }
+.modal-overlay.visible { opacity: 1; }
+.modal-panel {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(146,64,14,0.18);
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transform: translateY(24px);
+  transition: transform 0.3s ease;
+}
+.modal-overlay.visible .modal-panel { transform: translateY(0); }
+.modal-top-stripe {
+  height: 6px;
+  background: var(--secondary);
+  border-radius: 16px 16px 0 0;
+  flex-shrink: 0;
+}
+.modal-header {
+  padding: clamp(1.2rem, 3vw, 1.8rem) clamp(1.2rem, 3vw, 2rem) 0.8rem;
+  position: relative;
+}
+.modal-problem-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+  font-weight: 700;
+  color: var(--text);
+  padding-right: 2rem;
+  line-height: 1.3;
+}
+.modal-close {
+  position: absolute;
+  top: clamp(0.8rem, 2vw, 1.2rem);
+  right: clamp(0.8rem, 2vw, 1.2rem);
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--secondary);
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: var(--section-bg); }
+.modal-body {
+  padding: 0 clamp(1.2rem, 3vw, 2rem) clamp(1.2rem, 3vw, 1.8rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.modal-guide-btn {
+  position: absolute;
+  top: clamp(0.8rem, 2vw, 1.2rem);
+  right: clamp(2.5rem, 5vw, 3.5rem);
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--secondary);
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.modal-guide-btn:hover { background: var(--section-bg); }
+.info-section {}
+.info-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  font-weight: 600;
+  color: var(--text);
+  border-left: 3px solid var(--secondary);
+  padding-left: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.info-text {
+  font-size: clamp(0.82rem, 1.4vw, 0.93rem);
+  color: var(--text-sec);
+  line-height: 1.65;
+  padding-left: 0.9rem;
+}
+.info-list {
+  list-style: none;
+  padding-left: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.info-list li {
+  font-size: clamp(0.82rem, 1.4vw, 0.93rem);
+  color: var(--text-sec);
+  line-height: 1.5;
+  display: flex;
+  gap: 0.5rem;
+}
+.info-list li::before {
+  content: '●';
+  color: var(--secondary);
+  flex-shrink: 0;
+  margin-top: 0.1em;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  padding-left: 0.9rem;
+}
+.meta-item {
+  background: var(--section-bg);
+  border-radius: 8px;
+  padding: 0.7rem;
+}
+.meta-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.meta-value {
+  font-size: clamp(0.8rem, 1.3vw, 0.88rem);
+  color: var(--text);
+  font-weight: 500;
+}
+.complexity-chips {
+  display: flex;
+  gap: 0.5rem;
+  padding-left: 0.9rem;
+  flex-wrap: wrap;
+}
+.chip {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.3rem 0.8rem;
+  border-radius: 99px;
+  border: 2px solid;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+}
+.chip.active { opacity: 1; }
+.chip-low { border-color: #16A34A; color: #16A34A; }
+.chip-low.active { background: #DCFCE7; }
+.chip-medium { border-color: #D97706; color: #D97706; }
+.chip-medium.active { background: #FEF3C7; }
+.chip-high { border-color: #DC2626; color: #DC2626; }
+.chip-high.active { background: #FEE2E2; }
+.modal-divider { border: none; border-top: 1px solid var(--border); }
+.feedback-section { display: flex; flex-direction: column; gap: 0.7rem; }
+.feedback-label {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  font-weight: 600;
+  color: var(--text);
+}
+.feedback-buttons { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.feedback-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: #fff;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: clamp(0.82rem, 1.4vw, 0.92rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-sec);
+}
+.feedback-btn:hover { border-color: var(--secondary); }
+.feedback-btn.active-yes { border-color: #16A34A; background: #DCFCE7; color: #16A34A; }
+.feedback-btn.active-no { border-color: #DC2626; background: #FEE2E2; color: #DC2626; }
+
+/* ── GUIDE ICON ── */
+.guide-fab {
+  position: fixed;
+  bottom: clamp(1rem, 3vw, 1.5rem);
+  right: clamp(1rem, 3vw, 1.5rem);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--secondary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(146,64,14,0.15);
+  z-index: 200;
+  color: var(--secondary);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.guide-fab:hover { box-shadow: 0 6px 24px rgba(146,64,14,0.25); transform: scale(1.08); }
+.guide-tooltip {
+  position: fixed;
+  bottom: clamp(3.5rem, 7vw, 4.5rem);
+  right: clamp(1rem, 3vw, 1.5rem);
+  background: #fff;
+  border-left: 4px solid var(--secondary);
+  border-radius: 0 10px 10px 10px;
+  padding: 0.9rem 1rem;
+  max-width: clamp(200px, 50vw, 280px);
+  font-size: clamp(0.78rem, 1.3vw, 0.88rem);
+  color: var(--text-sec);
+  box-shadow: 0 6px 24px rgba(146,64,14,0.14);
+  z-index: 200;
+  display: none;
+  line-height: 1.55;
+}
+.guide-tooltip.open { display: block; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--section-bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">Strategy Unbounded</div>
+  <div class="step-indicator">
+    <span class="step-label">Step <span id="step-num">1</span> of 4</span>
+    <div class="step-dots">
+      <div class="step-dot active" id="dot-1"></div>
+      <div class="step-dot" id="dot-2"></div>
+      <div class="step-dot" id="dot-3"></div>
+      <div class="step-dot" id="dot-4"></div>
+    </div>
+  </div>
+</header>
+
+<!-- SCREEN 1: INTRO -->
+<div class="screen active" id="screen1">
+  <div class="intro-body">
+    <div class="avatar-panel">
+      <img src="Benjamin_Avatar.png" alt="AI Guide">
+      <div class="avatar-label">Benjamin — Your Strategy Guide</div>
+    </div>
+    <div class="intro-content">
+      <div class="intro-sublabel">Part 1 · AI Use Case Discovery</div>
+      <h1>Welcome to Strategy Unbounded</h1>
+      <div class="speech-bubble">
+        <span id="typewriter-text"></span><span class="cursor" id="cursor"></span>
+      </div>
+      <button class="btn-primary" id="begin-btn" disabled onclick="showScreen(2)">I'm Ready — Let's Begin →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: PROBLEM INPUT -->
+<div class="screen" id="screen2">
+  <div class="form-container">
+    <h2>Define Your 5 Challenges</h2>
+    <p class="form-sub">Describe each problem your organisation is facing. Our AI agents will craft targeted solutions for every one.</p>
+    <div id="problems-form">
+      <!-- Rows injected by JS -->
+    </div>
+    <button class="btn-submit" id="submit-btn" disabled onclick="startProcessing()">Submit &amp; Brainstorm →</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: PROCESSING -->
+<div class="screen" id="screen3">
+  <div class="processing-wrap">
+    <div class="agents-row">
+      <div class="agent-card">
+        <svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+        </svg>
+        <div class="agent-name">Agent 01</div>
+        <div class="agent-status"><div class="pulse-dot"></div> Active</div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-card">
+        <svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        <div class="agent-name">Agent 02</div>
+        <div class="agent-status"><div class="pulse-dot"></div> Active</div>
+      </div>
+      <div class="connector"></div>
+      <div class="agent-card">
+        <svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <div class="agent-name">Agent 03</div>
+        <div class="agent-status"><div class="pulse-dot"></div> Active</div>
+      </div>
+    </div>
+    <h2>Brainstorming in Progress</h2>
+    <div class="status-text" id="status-text">Reading your challenges…</div>
+    <div class="progress-track"><div class="progress-fill"></div></div>
+  </div>
+</div>
+
+<!-- SCREEN 4: RESULTS -->
+<div class="screen" id="screen4">
+  <div class="results-container">
+    <div class="results-title">AI Use Cases for Your Business</div>
+    <div class="summary-bar">15 use cases identified · Click any card to explore · Adjust priorities with ▲▼</div>
+    <div id="results-sections"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal-panel" id="modal-panel">
+    <div class="modal-top-stripe"></div>
+    <div class="modal-header">
+      <div class="modal-problem-label" id="modal-problem-label"></div>
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-guide-btn" onclick="toggleModalGuide()" title="Guide">?</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-section">
+        <div class="info-heading">Description</div>
+        <div class="info-text" id="modal-description"></div>
+      </div>
+      <div class="info-section">
+        <div class="info-heading">How It Works</div>
+        <ul class="info-list" id="modal-how"></ul>
+      </div>
+      <div class="info-section">
+        <div class="info-heading">Data Required</div>
+        <div class="info-text" id="modal-data"></div>
+      </div>
+      <div class="info-section">
+        <div class="info-heading">Time to Implement</div>
+        <div class="info-text" id="modal-time"></div>
+      </div>
+      <div class="info-section">
+        <div class="info-heading">Complexity</div>
+        <div class="complexity-chips">
+          <span class="chip chip-low" id="chip-low">Low</span>
+          <span class="chip chip-medium" id="chip-medium">Medium</span>
+          <span class="chip chip-high" id="chip-high">High</span>
+        </div>
+      </div>
+      <div class="info-section">
+        <div class="info-heading">Estimated Cost &amp; ROI</div>
+        <div class="info-text" id="modal-roi"></div>
+      </div>
+      <hr class="modal-divider">
+      <div class="feedback-section">
+        <div class="feedback-label">Is this relevant to your business?</div>
+        <div class="feedback-buttons">
+          <button class="feedback-btn" id="fb-yes" onclick="setFeedback('yes')">👍 Relevant</button>
+          <button class="feedback-btn" id="fb-no" onclick="setFeedback('no')">👎 Not applicable</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GUIDE TOOLTIP -->
+<div class="guide-tooltip" id="modal-guide-tip" style="position:fixed;bottom:auto;right:auto;top:50%;transform:translate(-50%,-50%);left:50%;max-width:280px;">
+  Use thumbs to flag ideas worth exploring further in the workshop.
+</div>
+
+<!-- GUIDE FAB -->
+<button class="guide-fab" id="guide-fab" onclick="toggleGuide()" title="Guide">
+  <svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="11" width="24" height="18" rx="4" stroke="currentColor" stroke-width="2.2"/>
+    <line x1="20" y1="11" x2="20" y2="5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    <circle cx="20" cy="4" r="2" fill="currentColor"/>
+    <circle cx="15" cy="19" r="2.5" fill="currentColor"/>
+    <circle cx="25" cy="19" r="2.5" fill="currentColor"/>
+    <path d="M14 26 Q20 30 26 26" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+    <rect x="13" y="29" width="14" height="8" rx="2" stroke="currentColor" stroke-width="2"/>
+    <line x1="8" y1="30" x2="13" y2="33" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <line x1="32" y1="30" x2="27" y2="33" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+</button>
+<div class="guide-tooltip" id="guide-tooltip"></div>
+
+<script>
+const API_KEY = 'YOUR_OPENAI_API_KEY';
+const ENDPOINT = 'YOUR_OPENAI_ENDPOINT';
+
+const GUIDE_TEXTS = {
+  1: 'Listen to Benjamin\'s introduction. Once finished, click the button below to enter the activity.',
+  2: 'Be specific. Name the department, the process, and the pain. The more context you give, the sharper the AI solutions.',
+  3: 'Our AI agents are working — this typically takes 20–40 seconds.',
+  4: 'Click any card to read the full AI use case. Use ▲ ▼ to change the priority ranking.'
+};
+
+const SPEECH = "Welcome to Strategy Unbounded. Your task today is to identify five real problems your organisation faces — challenges, inefficiencies, risks, or opportunities being missed. Once you've shared those problems, our AI agents will brainstorm powerful AI-driven solutions for each one. Take a moment to reflect. When you're ready, click below to begin.";
+
+const STATUS_MESSAGES = ['Reading your challenges…','Synthesising use cases…','Ranking by business impact…','Finalising your report…'];
+
+const MOCK_PROBLEMS = [
+  "Manual invoice processing takes 3 days and is error-prone",
+  "High customer churn rate with no early warning system",
+  "Supply chain disruptions causing stock-outs",
+  "Slow recruitment process losing top candidates",
+  "Regulatory compliance monitoring done manually"
+];
+
+const MOCK_USE_CASES = [
+  {id:0,problem_index:0,title:"Intelligent Invoice Processing",summary:"Automate end-to-end invoice extraction, validation, and routing using computer vision and NLP.",description:"Deploy an AI system that reads invoices from any format — PDF, email, scanned — and extracts key fields using OCR and named-entity recognition. The system validates extracted data against ERP records and automatically routes invoices to the correct approver, reducing processing time from days to minutes.",how_it_works:["Ingest invoices via email, portal, or scan into a centralised document queue","Apply OCR and NLP to extract vendor, amount, line items, and due dates","Cross-reference extracted data against purchase orders in the ERP system","Auto-route matched invoices for payment; flag mismatches for human review"],data_required:"Historical invoices (PDF/image), ERP purchase order data, vendor master records, approval workflow rules",time_to_implement:"3–5 months for MVP",complexity:"Medium",cost_roi:"£70k–£120k build cost; expected 60% reduction in processing time, 3× ROI within 18 months",priority:1},
+  {id:1,problem_index:0,title:"Accounts Payable Automation",summary:"Streamline AP workflows with AI-driven exception handling and intelligent payment scheduling.",description:"An AI layer on top of your existing AP system that learns payment patterns, identifies early-payment discount opportunities, and flags duplicate or fraudulent invoices before they are processed. The system reduces manual touchpoints by 70% and improves cash flow visibility.",how_it_works:["Analyse historical payment data to learn vendor behaviour and discount windows","Flag duplicate invoices using fuzzy matching on amount, date, and vendor fields","Recommend optimal payment timing to maximise early-payment discounts","Generate real-time AP dashboard with cash flow projections"],data_required:"AP transaction history, vendor payment terms, bank statement data, ERP ledger exports",time_to_implement:"2–4 months",complexity:"Low",cost_roi:"£40k–£80k; 2.5× ROI through discount capture and fraud prevention within 12 months",priority:2},
+  {id:2,problem_index:0,title:"Vendor Risk Scoring AI",summary:"Continuously assess supplier financial health and delivery reliability using AI risk models.",description:"Build a vendor risk intelligence platform that aggregates public financial data, delivery history, and news signals to score each supplier on financial stability, operational reliability, and geopolitical risk. Procurement teams receive proactive alerts when a key supplier's risk score deteriorates.",how_it_works:["Pull supplier financial filings, news, and credit ratings via APIs","Score each supplier on five risk dimensions using a trained ML model","Update scores weekly and trigger alerts when thresholds are crossed","Integrate risk scores into procurement approval workflows"],data_required:"Supplier financial reports, delivery performance records, third-party credit data feeds",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£90k–£160k; mitigates supply chain disruptions estimated at £500k+ per incident",priority:3},
+  {id:3,problem_index:1,title:"Customer Churn Prediction",summary:"Identify customers at risk of leaving up to 90 days in advance using behavioural ML models.",description:"Train a gradient-boosted churn model on CRM, usage, and support data to score every customer monthly on churn probability. High-risk customers are surfaced to account managers with an AI-generated intervention recommendation — the right action, for the right customer, at the right time.",how_it_works:["Feature-engineer 80+ signals from CRM, product usage logs, and support tickets","Train and validate a churn classification model on 24 months of historical data","Score the full customer base monthly and rank by churn probability","Push high-risk alerts to CRM with recommended intervention playbooks"],data_required:"CRM records, product usage logs, support ticket history, contract and billing data",time_to_implement:"3–5 months",complexity:"Medium",cost_roi:"£60k–£100k; 10% reduction in churn = £1.2M annual revenue retained (illustrative)",priority:1},
+  {id:4,problem_index:1,title:"AI Customer Support Agent",summary:"Deploy a conversational AI agent that resolves Tier-1 support queries instantly, 24/7.",description:"Implement an LLM-powered support agent trained on your product documentation, FAQs, and resolved ticket history. The agent handles password resets, billing queries, and how-to questions autonomously, escalating to human agents only when confidence drops below a threshold.",how_it_works:["Index product docs, FAQs, and historical tickets into a vector knowledge base","Fine-tune an LLM on your support tone and resolution patterns","Deploy via web chat, email, and WhatsApp with seamless human escalation","Monitor resolution rate, CSAT, and escalation ratio weekly"],data_required:"Resolved support tickets (2+ years), product documentation, FAQ database",time_to_implement:"2–3 months",complexity:"Medium",cost_roi:"£50k–£90k; reduces support cost per ticket by 65%, freeing agents for complex cases",priority:2},
+  {id:5,problem_index:1,title:"Sentiment Analysis Pipeline",summary:"Monitor customer sentiment across all channels in real time to detect dissatisfaction early.",description:"Build a real-time NLP pipeline that ingests reviews, support chats, social mentions, and NPS responses to compute a unified sentiment score per customer segment. Sudden drops trigger alerts to the relevant team before dissatisfaction becomes churn.",how_it_works:["Aggregate text data from reviews, chat logs, social APIs, and NPS surveys","Apply a fine-tuned sentiment and topic classification model per message","Compute rolling sentiment scores by product, region, and customer tier","Alert CX teams when segment sentiment drops below configurable thresholds"],data_required:"Customer reviews, support chat transcripts, social media mentions, NPS verbatims",time_to_implement:"2–4 months",complexity:"Low",cost_roi:"£35k–£65k; early intervention prevents estimated 15% of avoidable churn cases",priority:3},
+  {id:6,problem_index:2,title:"Supply Chain Demand Forecasting",summary:"Predict demand at SKU-location level 12 weeks ahead using ML, cutting stock-outs by 40%.",description:"Replace spreadsheet-based forecasting with an ML ensemble model that ingests sales history, promotions, seasonality, and external signals (weather, events, macro) to produce weekly demand forecasts at SKU × warehouse level. Planners receive confidence intervals and scenario outputs.",how_it_works:["Consolidate sales, inventory, and promotion data into a unified forecasting data lake","Train an ensemble of gradient boosting and time-series models per SKU cluster","Generate 12-week rolling forecasts with P10/P50/P90 confidence bands","Feed forecasts into ERP replenishment engine to auto-generate purchase orders"],data_required:"3+ years of sales history, inventory levels, promotion calendars, supplier lead times",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£100k–£180k; 40% reduction in stock-outs, 15% reduction in excess inventory",priority:1},
+  {id:7,problem_index:2,title:"Inventory Anomaly Detection",summary:"Detect phantom inventory, shrinkage, and data errors in real time using AI anomaly models.",description:"An unsupervised anomaly detection system that continuously monitors inventory movements and flags deviations from expected patterns — sudden drops, impossible quantities, or mismatched location data. Warehousing teams receive prioritised daily digests of anomalies to investigate.",how_it_works:["Stream inventory transaction events from WMS into a real-time processing pipeline","Apply isolation forest and statistical control models per SKU and location","Score each transaction on anomaly likelihood and severity","Surface daily anomaly digest to warehouse managers via dashboard and email"],data_required:"WMS transaction logs, inventory count records, receiving and dispatch data",time_to_implement:"2–4 months",complexity:"Medium",cost_roi:"£45k–£80k; reduces shrinkage losses by an estimated 25% in year one",priority:2},
+  {id:8,problem_index:2,title:"Logistics Route Optimisation",summary:"Reduce last-mile delivery costs by 20% with AI-powered dynamic route planning.",description:"Implement a vehicle routing optimisation engine that uses constraint-based AI to plan daily delivery routes accounting for traffic, time windows, vehicle capacity, and driver hours. The system re-optimises routes dynamically when orders change or disruptions occur.",how_it_works:["Ingest daily order manifests, vehicle capacity constraints, and time-window requirements","Solve vehicle routing problem using a hybrid metaheuristic optimisation algorithm","Integrate real-time traffic data to adjust routes dynamically during the day","Provide drivers with turn-by-turn instructions via a mobile app"],data_required:"Order data, delivery addresses, vehicle fleet details, historical traffic patterns",time_to_implement:"3–5 months",complexity:"High",cost_roi:"£80k–£140k; 20% reduction in fuel and driver costs, estimated £400k annual saving",priority:3},
+  {id:9,problem_index:3,title:"AI Candidate Screening",summary:"Reduce time-to-shortlist by 70% with AI-powered CV screening and skills matching.",description:"Deploy an NLP-based screening engine that parses CVs against job description requirements, scores candidates on skills match, experience relevance, and culture-fit signals, and produces a ranked shortlist with explainable scores for each recruiter. Bias is mitigated by anonymising demographic signals before scoring.",how_it_works:["Parse incoming CVs using a document intelligence model to extract structured data","Score each candidate against a job-description embedding using semantic similarity","Rank and shortlist top candidates with a reasoning summary per candidate","Flag potential bias risks and provide diversity statistics on the shortlist"],data_required:"Historical CVs, job descriptions, successful-hire outcome data, assessment scores",time_to_implement:"3–4 months",complexity:"Medium",cost_roi:"£55k–£95k; 70% reduction in recruiter screening time, faster offer acceptance",priority:1},
+  {id:10,problem_index:3,title:"Employee Productivity Coach",summary:"Surface personalised nudges to boost employee output and wellbeing using behavioural AI.",description:"An AI coaching layer integrated with productivity tools (calendar, email, project management) that identifies patterns associated with burnout, low output, or skill gaps, and delivers personalised weekly nudges — time-blocking suggestions, learning recommendations, and workload alerts — to each employee and their manager.",how_it_works:["Aggregate anonymised productivity signals from calendar, collaboration, and task tools","Train a productivity pattern model per role family using opt-in employee data","Generate weekly personalised insights and nudges per employee","Provide manager-level team health dashboards with aggregate (not individual) metrics"],data_required:"Calendar data, collaboration tool logs (anonymised), project completion rates, pulse survey results",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£90k–£150k; estimated 8–12% improvement in output per employee per quarter",priority:2},
+  {id:11,problem_index:3,title:"Knowledge Graph Assistant",summary:"Make institutional knowledge instantly searchable with an AI-powered enterprise knowledge graph.",description:"Build a knowledge graph that connects people, projects, documents, and expertise across the organisation. Employees query it via natural language to find subject-matter experts, locate relevant past work, or understand process dependencies — eliminating hours of hunting through shared drives.",how_it_works:["Index documents, wikis, project records, and org-chart data into a graph database","Apply entity extraction and relationship inference to build knowledge connections","Expose a natural language query interface using an LLM over the graph","Update the graph incrementally as new documents and projects are created"],data_required:"Intranet documents, SharePoint/Confluence content, project records, email metadata (headers only)",time_to_implement:"3–5 months",complexity:"Medium",cost_roi:"£60k–£110k; saves estimated 2 hours per employee per week in knowledge retrieval",priority:3},
+  {id:12,problem_index:4,title:"Real-Time Compliance Monitor",summary:"Detect regulatory breaches as they happen using AI monitoring across transactions and communications.",description:"An AI compliance surveillance system that screens transactions, communications, and operational events against regulatory rule sets in near real time, flagging potential violations for the compliance team before they escalate. The system maintains a full audit trail and generates regulatory reports automatically.",how_it_works:["Ingest transaction streams, email, and voice-call transcripts into a compliance pipeline","Apply rule-based and ML classifiers trained on historical breaches and near-misses","Score each event on violation probability and severity across regulatory frameworks","Auto-generate breach reports and route alerts to the compliance team within minutes"],data_required:"Transaction logs, email/communication archives, regulatory rule sets, historical breach records",time_to_implement:"5–7 months",complexity:"High",cost_roi:"£120k–£200k; potential to prevent regulatory fines averaging £2M+ per incident",priority:1},
+  {id:13,problem_index:4,title:"Financial Risk Scoring",summary:"Assess counterparty and credit risk dynamically with ML models updated daily.",description:"Replace static annual credit reviews with a dynamic ML risk scoring system that ingests financial statements, payment behaviour, and market signals to produce daily updated risk scores for every counterparty. Treasury and credit teams see live risk dashboards with concentration alerts.",how_it_works:["Pull counterparty financials, payment history, and market data from internal and third-party sources","Train credit risk models using historical default and late-payment data","Score all active counterparties daily and compute portfolio concentration metrics","Alert treasury when individual or sector concentration exceeds risk appetite thresholds"],data_required:"Counterparty financial statements, payment history, accounts receivable aging, market data feeds",time_to_implement:"4–6 months",complexity:"High",cost_roi:"£100k–£170k; reduces bad debt write-offs by an estimated 30%, improves capital efficiency",priority:2},
+  {id:14,problem_index:4,title:"Revenue Optimisation Engine",summary:"Identify pricing and cross-sell opportunities using AI analysis of customer and transaction data.",description:"Build a revenue intelligence platform that uses ML to identify optimal pricing by customer segment, surfaces timely cross-sell and upsell recommendations for account managers, and models the revenue impact of proposed commercial changes before they are launched.",how_it_works:["Analyse transaction, contract, and CRM data to build customer revenue profiles","Train price elasticity and propensity-to-buy models per segment and product","Push cross-sell recommendations to CRM at the account manager workflow level","Run revenue scenario models to quantify impact of pricing or promotional changes"],data_required:"Transaction history, CRM opportunity data, contract terms, product catalogue, market pricing data",time_to_implement:"4–6 months",complexity:"Medium",cost_roi:"£80k–£140k; average 8–12% revenue uplift from optimised pricing and targeted cross-sell",priority:3}
+];
+
+let currentScreen = 1;
+let problems = [...MOCK_PROBLEMS];
+let useCases = [];
+let priorities = {};
+let feedback = {};
+let currentModalId = null;
+let guideOpen = false;
+let modalGuideOpen = false;
+
+function setStep(n) {
+  currentScreen = n;
+  document.getElementById('step-num').textContent = n;
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('dot-' + i).classList.toggle('active', i <= n);
+  }
+  document.getElementById('guide-tooltip').textContent = GUIDE_TEXTS[n] || '';
+  document.getElementById('guide-tooltip').classList.remove('open');
+  guideOpen = false;
+}
+
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
+  setStep(n);
+  window.scrollTo(0, 0);
+}
+
+function startTypewriter() {
+  const el = document.getElementById('typewriter-text');
+  const cursor = document.getElementById('cursor');
+  const words = SPEECH.split(' ');
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < words.length) {
+      el.textContent += (i === 0 ? '' : ' ') + words[i];
+      i++;
+    } else {
+      clearInterval(interval);
+      cursor.style.display = 'none';
+      document.getElementById('begin-btn').disabled = false;
+    }
+  }, 60);
+}
+
+function buildForm() {
+  const form = document.getElementById('problems-form');
+  form.style.display = 'flex';
+  form.style.flexDirection = 'column';
+  form.style.gap = '1.2rem';
+  for (let i = 0; i < 5; i++) {
+    const row = document.createElement('div');
+    row.className = 'problem-row';
+    row.innerHTML = `
+      <div class="problem-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="textarea-wrap">
+        <textarea class="problem-textarea" id="prob-${i}" placeholder="Describe problem ${i+1}…" maxlength="300" oninput="onProblemInput(${i}, this)">${MOCK_PROBLEMS[i]}</textarea>
+        <span class="char-count" id="cc-${i}">${MOCK_PROBLEMS[i].length} / 300</span>
+      </div>`;
+    form.appendChild(row);
+  }
+  validateForm();
+}
+
+function onProblemInput(i, el) {
+  document.getElementById('cc-' + i).textContent = el.value.length + ' / 300';
+  validateForm();
+}
+
+function validateForm() {
+  let all = true;
+  for (let i = 0; i < 5; i++) {
+    const el = document.getElementById('prob-' + i);
+    if (!el || el.value.trim().length < 10) { all = false; break; }
+  }
+  document.getElementById('submit-btn').disabled = !all;
+}
+
+function startProcessing() {
+  problems = [];
+  for (let i = 0; i < 5; i++) problems.push(document.getElementById('prob-' + i).value.trim());
+  showScreen(3);
+  let si = 0;
+  const st = document.getElementById('status-text');
+  const cycle = setInterval(() => {
+    si = (si + 1) % STATUS_MESSAGES.length;
+    st.textContent = STATUS_MESSAGES[si];
+  }, 3000);
+  callLLM(problems).then(data => {
+    clearInterval(cycle);
+    useCases = data;
+    data.forEach(u => { priorities[u.id] = u.priority; feedback[u.id] = null; });
+    setTimeout(() => { showScreen(4); renderResults(); }, 500);
+  });
+}
+
+async function callLLM(probs) {
+  if (API_KEY === 'YOUR_OPENAI_API_KEY') return MOCK_USE_CASES.map(u => ({...u}));
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: 'You are a strategic AI consultant. Given 5 company problems, generate exactly 3 AI-powered use cases per problem (15 total). Return JSON with key "use_cases" containing array of 15 objects. Each: id(0-14), problem_index(0-4), title, summary(one sentence), description(2-3 sentences), how_it_works(array of 4 strings), data_required, time_to_implement, complexity("Low"|"Medium"|"High"), cost_roi, priority(1|2|3).' },
+          { role: 'user', content: 'Problems:\n' + probs.map((p,i) => (i+1)+'. '+p).join('\n') }
+        ]
+      })
+    });
+    const json = await res.json();
+    return JSON.parse(json.choices[0].message.content).use_cases;
+  } catch(e) {
+    return MOCK_USE_CASES.map(u => ({...u}));
+  }
+}
+
+function renderResults() {
+  const container = document.getElementById('results-sections');
+  container.innerHTML = '';
+  const grouped = {};
+  useCases.forEach(u => {
+    if (!grouped[u.problem_index]) grouped[u.problem_index] = [];
+    grouped[u.problem_index].push(u);
+  });
+  Object.keys(grouped).sort().forEach(pi => {
+    const sect = document.createElement('div');
+    sect.className = 'problem-section';
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    const prob = problems[pi] || 'Problem ' + (parseInt(pi)+1);
+    hdr.innerHTML = `
+      <div>
+        <div class="section-label">Problem ${parseInt(pi)+1}</div>
+        <div class="section-problem">${prob.length > 80 ? prob.slice(0,80)+'…' : prob}</div>
+      </div>
+      <span class="chevron open">▼</span>`;
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    grouped[pi].forEach(u => body.appendChild(makeCard(u)));
+    hdr.addEventListener('click', () => {
+      body.classList.toggle('collapsed');
+      hdr.querySelector('.chevron').classList.toggle('open');
+    });
+    sect.appendChild(hdr);
+    sect.appendChild(body);
+    container.appendChild(sect);
+  });
+}
+
+function makeCard(u) {
+  const p = priorities[u.id] || u.priority;
+  const stripColor = p === 1 ? 'var(--p1)' : p === 2 ? 'var(--p2)' : 'var(--p3)';
+  const badgeClass = p === 1 ? 'badge-p1' : p === 2 ? 'badge-p2' : 'badge-p3';
+  const card = document.createElement('div');
+  card.className = 'use-case-card';
+  card.id = 'card-' + u.id;
+  card.innerHTML = `
+    <div class="card-strip" style="background:${stripColor}"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap">
+          <span class="priority-badge ${badgeClass}" id="badge-${u.id}">Priority ${p}</span>
+          <div class="priority-controls">
+            <button class="prio-btn" id="up-${u.id}" onclick="changePriority(event,${u.id},-1)" title="Increase priority">&nbsp;▲&nbsp;</button>
+            <button class="prio-btn" id="dn-${u.id}" onclick="changePriority(event,${u.id},1)" title="Decrease priority">&nbsp;▼&nbsp;</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-title">${u.title}</div>
+      <div class="card-summary">${u.summary}</div>
+      <div class="card-link">View Details →</div>
+    </div>`;
+  card.addEventListener('click', () => openModal(u));
+  updatePriorityButtons(u.id, p);
+  return card;
+}
+
+function changePriority(e, id, delta) {
+  e.stopPropagation();
+  const np = Math.min(3, Math.max(1, (priorities[id] || 1) + delta));
+  priorities[id] = np;
+  const card = document.getElementById('card-' + id);
+  const strip = card.querySelector('.card-strip');
+  const badge = document.getElementById('badge-' + id);
+  strip.style.background = np === 1 ? 'var(--p1)' : np === 2 ? 'var(--p2)' : 'var(--p3)';
+  badge.className = 'priority-badge ' + (np === 1 ? 'badge-p1' : np === 2 ? 'badge-p2' : 'badge-p3');
+  badge.textContent = 'Priority ' + np;
+  updatePriorityButtons(id, np);
+}
+
+function updatePriorityButtons(id, p) {
+  const up = document.getElementById('up-' + id);
+  const dn = document.getElementById('dn-' + id);
+  if (up) up.disabled = p <= 1;
+  if (dn) dn.disabled = p >= 3;
+}
+
+function openModal(u) {
+  currentModalId = u.id;
+  document.getElementById('modal-problem-label').textContent = 'Re: ' + (problems[u.problem_index] || '').slice(0,60) + (problems[u.problem_index]?.length > 60 ? '…' : '');
+  document.getElementById('modal-title').textContent = u.title;
+  document.getElementById('modal-description').textContent = u.description;
+  const how = document.getElementById('modal-how');
+  how.innerHTML = '';
+  (u.how_it_works || []).forEach(step => {
+    const li = document.createElement('li');
+    li.textContent = step;
+    how.appendChild(li);
+  });
+  document.getElementById('modal-data').textContent = u.data_required;
+  document.getElementById('modal-time').textContent = u.time_to_implement;
+  document.getElementById('modal-roi').textContent = u.cost_roi;
+  ['low','medium','high'].forEach(c => {
+    document.getElementById('chip-' + c).classList.toggle('active', u.complexity?.toLowerCase() === c);
+  });
+  const fb = feedback[u.id];
+  document.getElementById('fb-yes').className = 'feedback-btn' + (fb === 'yes' ? ' active-yes' : '');
+  document.getElementById('fb-no').className = 'feedback-btn' + (fb === 'no' ? ' active-no' : '');
+  const overlay = document.getElementById('modal-overlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('visible'), 10);
+  document.getElementById('modal-guide-tip').style.display = 'none';
+  modalGuideOpen = false;
+}
+
+function closeModal() {
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.remove('visible');
+  setTimeout(() => { overlay.style.display = 'none'; currentModalId = null; }, 250);
+}
+
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function setFeedback(type) {
+  if (currentModalId === null) return;
+  feedback[currentModalId] = feedback[currentModalId] === type ? null : type;
+  const f = feedback[currentModalId];
+  document.getElementById('fb-yes').className = 'feedback-btn' + (f === 'yes' ? ' active-yes' : '');
+  document.getElementById('fb-no').className = 'feedback-btn' + (f === 'no' ? ' active-no' : '');
+}
+
+function toggleGuide() {
+  guideOpen = !guideOpen;
+  document.getElementById('guide-tooltip').classList.toggle('open', guideOpen);
+}
+
+function toggleModalGuide() {
+  modalGuideOpen = !modalGuideOpen;
+  const t = document.getElementById('modal-guide-tip');
+  t.style.display = modalGuideOpen ? 'block' : 'none';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+window.addEventListener('DOMContentLoaded', () => {
+  buildForm();
+  startTypewriter();
+  // Pre-expand first section in results
+});
+</script>
+</body>
+</html>

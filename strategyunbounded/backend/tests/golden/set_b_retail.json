@@ -1,0 +1,11 @@
+{
+  "name": "Retail / customer-facing",
+  "problems": [
+    "TODO: Add retail problem 1",
+    "TODO: Add retail problem 2",
+    "TODO: Add retail problem 3",
+    "TODO: Add retail problem 4",
+    "TODO: Add retail problem 5"
+  ],
+  "notes": "Customer-facing: churn, personalisation, support volume, onboarding drop-off, feedback analysis."
+}
