@@ -176,7 +176,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
           Here's what I understood
         </h1>
         <p className="text-sm text-slate-500">
-          Review what was extracted. Edit any item or confirm to generate context-informed strategic opportunities.
+          Please review the AI interpretation of your challenges. Once you confirm, the Strategy Unbounded Agent will generate a long list of AI opportunities and shortlist 8–10 opportunities for further review.
         </p>
       </div>
 
@@ -299,104 +299,7 @@ export const Page3ConfirmUnderstanding: React.FC<Page3ConfirmUnderstandingProps>
           </div>
         </div>
 
-        {/* Section 2: Initial AI Ideas (Optional / Compact) */}
-        {ideas.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Initial AI ideas</h2>
-                <span className="text-xs text-slate-400">Concepts noted during discussion</span>
-              </div>
-              <button
-                onClick={() => setIsAddingIdea(true)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add idea</span>
-              </button>
-            </div>
-
-            <div className="space-y-2.5">
-              {ideas.map((item, idx) => {
-                const isEditing = editingIdeaIndex === idx;
-
-                return (
-                  <div
-                    key={idx}
-                    className="group p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 flex items-start justify-between gap-3 transition-all"
-                  >
-                    <div className="flex items-start gap-3 flex-1">
-                      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
-                        {idx + 1}
-                      </span>
-
-                      {isEditing ? (
-                        <input
-                          type="text"
-                          defaultValue={item}
-                          autoFocus
-                          onBlur={(e) => handleSaveIdeaEdit(idx, e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleSaveIdeaEdit(idx, e.currentTarget.value);
-                            if (e.key === 'Escape') setEditingIdeaIndex(null);
-                          }}
-                          className="w-full text-sm text-slate-800 bg-white border border-indigo-500 rounded px-2 py-1 outline-none"
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-slate-800 leading-snug">
-                          {item}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                      <button
-                        onClick={() => setEditingIdeaIndex(isEditing ? null : idx)}
-                        title="Edit this item"
-                        className="p-1 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleRemoveIdea(idx)}
-                        title="Delete this item"
-                        className="p-1 rounded text-slate-400 hover:text-red-600 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {isAddingIdea && (
-                <div className="p-3 rounded-xl border border-indigo-300 bg-indigo-50/40 flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Type new initial idea..."
-                    value={newIdeaText}
-                    autoFocus
-                    onChange={(e) => setNewIdeaText(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddIdea()}
-                    className="w-full text-sm text-slate-800 bg-white border border-slate-300 rounded-lg px-3 py-1.5 outline-none"
-                  />
-                  <button
-                    onClick={handleAddIdea}
-                    className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold shrink-0 cursor-pointer"
-                  >
-                    Add
-                  </button>
-                  <button
-                    onClick={() => setIsAddingIdea(false)}
-                    className="text-xs text-slate-500 hover:text-slate-700 px-2 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Initial AI ideas are intentionally withheld here; this step confirms participant challenges only. */}
 
         {/* 3 Actions */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">

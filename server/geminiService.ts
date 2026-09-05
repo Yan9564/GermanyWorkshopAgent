@@ -64,8 +64,7 @@ export function formatWorkshopContext(context?: Partial<WorkshopContext>): strin
     ['Organization', context.organization],
     ['Industry / Sector', context.industry],
     ['Business Unit / Function', context.businessUnit],
-    ['Workshop Topic', context.workshopTopic || context.title],
-    ['Workshop Objective', context.workshopObjective || context.objective],
+    ['Objective', context.objective || context.workshopObjective],
     ['Process / Workflow in Scope', context.processScope],
     ['Key Stakeholders / Users', context.stakeholders],
     ['Current Challenges / Pain Points', context.currentChallenges],
@@ -75,7 +74,7 @@ export function formatWorkshopContext(context?: Partial<WorkshopContext>): strin
   ];
   const populated = fields.filter(([, value]) => typeof value === 'string' && value.trim());
   if (populated.length === 0) return '';
-  return `WORKSHOP CONTEXT (supporting background; do not treat as verified fact)\n${populated
+  return `EXERCISE CONTEXT (supporting background; do not treat as participant-provided challenge evidence)\n${populated
     .map(([label, value]) => `${label}: ${(value as string).trim()}`)
     .join('\n')}`;
 }
@@ -147,6 +146,9 @@ IMPORTANT GUIDELINES:
 - Do NOT invent or hallucinate text that is not visible on the whiteboard.
 - If handwriting is unclear, add it to the "uncertainties" array with a note (e.g., "Partial note near top-right reading '...logistics vendor...' was indistinct").
 - Preserve the participants' authentic phrasing and strategic intent.
+- Extract only substantive business or process challenges. Ignore participant/facilitator commentary, instructions, counts, and logistics.
+- Do not treat statements such as “we identified 3 challenges”, “we discussed this already”, “let’s move on”, or “this is challenge number 2” as challenges.
+- Do not invent challenge content. When image and free text are both supplied, incorporate both sources and preserve conflicts for human review rather than guessing.
 ${userNotesHint ? `Additional participant context provided: "${userNotesHint}"` : ''}
 
 Respond with strict JSON matching this schema:

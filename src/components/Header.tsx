@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Strategy Unbounded
               </span>
               <span className="text-[11px] text-slate-500 font-medium leading-tight">
-                AI-Guided Strategy Workshop
+                Strategy Unbounded Agent
               </span>
             </div>
           </button>
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onReset}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-            title="Reset Workshop Session"
+            title="Reset Exercise Session"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
