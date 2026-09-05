@@ -87,7 +87,7 @@ export const Page2TeamThinking: React.FC<Page2TeamThinkingProps> = ({
           What are the most important challenges your organisation needs to address?
         </h1>
         <p className="text-sm text-slate-500">
-          Add your team's discussion as text or upload a photo of your board. Workshop Context will support interpretation without replacing what participants provide.
+          As a group, discuss and agree upon the top 5 challenges. You have 15 minutes to complete this discussion and either upload a picture of the whiteboard or type your input into the free-text field.
         </p>
       </div>
 
@@ -220,6 +220,17 @@ export const Page2TeamThinking: React.FC<Page2TeamThinkingProps> = ({
           </button>
         </div>
       </div>
+
+      {(uploadedImage || textNotes.trim()) && (
+        <div className="mt-5 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-950">
+          <strong>Inputs to be analysed:</strong>
+          <ul className="mt-1 space-y-1">
+            {uploadedImage && <li>✓ Whiteboard image</li>}
+            {textNotes.trim() && <li>✓ Free-text notes</li>}
+          </ul>
+          <p className="mt-2 text-xs text-indigo-700">Both sources are preserved and combined when both are provided.</p>
+        </div>
+      )}
     </div>
   );
 };

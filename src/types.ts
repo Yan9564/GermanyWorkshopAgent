@@ -66,6 +66,7 @@ export interface WorkshopContext {
   organization?: string;
   industry?: string;
   businessUnit?: string;
+  /** Legacy fields retained only to migrate existing saved sessions. */
   workshopTopic?: string;
   workshopObjective?: string;
   processScope?: string;
@@ -101,6 +102,8 @@ export interface HumanDiscussionData {
   challenges: string[];
   initialAIIdeas: string[];
   rawTextNotes?: string;
+  /** Immutable source extraction; reviewed challenges live in challenges. */
+  whiteboardExtractedChallenges?: string[];
   isConfirmed: boolean;
   uploadedImages: UploadedWhiteboard[];
   confirmedAt?: number;
@@ -269,6 +272,7 @@ export interface WorkshopSessionState {
   challengeEntities?: WorkshopChallenge[];
   humanDiscussion: HumanDiscussionData;
   exploration?: AIExplorationOutput | null;
+  longList?: AIOpportunity[];
   aiExploration?: AIExplorationOutput | null;
   humanReview?: {
     reviews: Record<string, HumanOpportunityReview>;

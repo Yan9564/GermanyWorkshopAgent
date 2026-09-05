@@ -37,6 +37,12 @@ import {
 } from './data/defaultData';
 import { getMainStageForStep } from './workshopStages';
 import { createInteractionEvent, createResearchId } from './researchLog';
+import { buildLongList } from './longList';
+
+const isSubstantiveChallenge = (value: string) => {
+  const text = value.trim();
+  return text.length > 3 && !/^(we (noted|identified|discussed)|let['’]?s move on|this is challenge (number|#)|challenge (number|#)\s*\d+)/i.test(text);
+};
 
 const INITIAL_SESSION: WorkshopSessionState = {
   id: `session-${Date.now()}`,
@@ -76,8 +82,7 @@ export default function App() {
         parsed.context = {
           ...DEFAULT_WORKSHOP_CONTEXT,
           ...(parsed.context || {}),
-          workshopTopic: parsed.context?.workshopTopic || parsed.context?.title || '',
-          workshopObjective: parsed.context?.workshopObjective || parsed.context?.objective || '',
+          objective: parsed.context?.objective || parsed.context?.workshopObjective || '',
           additionalContext: parsed.context?.additionalContext || parsed.context?.background || '',
         };
         parsed.interactions = Array.isArray(parsed.interactions) ? parsed.interactions : [];
@@ -282,31 +287,19 @@ export default function App() {
         }
       }
 
-      // If no extraction returned or no image, parse typed notes
-      if (extractedChallenges.length === 0 && textNotes.trim()) {
+      const imageChallenges = extractedChallenges.filter(isSubstantiveChallenge);
+      // Typed notes are an independent source and are always preserved and combined.
+      if (textNotes.trim()) {
         const lines = textNotes
           .split('\n')
           .map((l) => l.replace(/^[-*•\d.]+\s*/, '').trim())
-          .filter((l) => l.length > 3);
+          .filter(isSubstantiveChallenge);
 
         if (lines.length > 0) {
-          extractedChallenges = lines;
+          extractedChallenges = [...imageChallenges, ...lines];
         }
       }
-
-      // Default fallback if still empty
-      if (extractedChallenges.length === 0) {
-        extractedChallenges = [
-          'Single-source tier-2 chip and sensor suppliers in Southeast Asia vulnerable to shutdown',
-          'Port transshipment congestion and cross-border customs bottlenecks causing 3-4 week untracked delays',
-          'Lack of real-time inventory visibility across 3PL partner warehouses and transit hubs',
-          'Cybersecurity intrusions targeting legacy industrial SCADA systems at manufacturing sites',
-        ];
-        extractedIdeas = [
-          'Multi-tier supplier disruption radar using ambient satellite & news signals',
-          'Dynamic freight rerouting & autonomous container ETA prediction',
-        ];
-      }
+      extractedChallenges = [...new Set(extractedChallenges.filter(isSubstantiveChallenge))];
 
       setUncertainties(foundUncertainties);
 
@@ -327,6 +320,7 @@ export default function App() {
           challenges: extractedChallenges,
           initialAIIdeas: extractedIdeas,
           rawTextNotes: textNotes,
+          whiteboardExtractedChallenges: imageChallenges,
           isConfirmed: false,
         },
         challengeEntities,
@@ -372,6 +366,7 @@ export default function App() {
           originalAIValue: opportunity.originalAIValue || { ...opportunity },
         })),
       };
+      const longList = buildLongList(explorationResult.opportunities, confirmedData.challenges, session.context);
 
       setSession((prev) => ({
         ...prev,
@@ -379,6 +374,7 @@ export default function App() {
         mainStage: 'representation',
         humanDiscussion: confirmedData,
         exploration: explorationResult,
+        longList,
         updatedAt: Date.now(),
       }));
     } finally {
@@ -391,7 +387,11 @@ export default function App() {
     setIsLoading(true);
     try {
       let boardOutput: BoardChallengeOutput | null = null;
-      let revisedOutput: RevisedPrioritiesOutput | null = null;
+      const rankedTop3 = (session.exploration?.opportunities || []).slice(0, 3);
+      let revisedOutput: RevisedPrioritiesOutput | null = {
+        revisedPriorities: rankedTop3.map((opportunity, index) => ({ id: opportunity.id, rank: index + 1, originalOpportunityId: opportunity.id, originalName: opportunity.name, humanFeedbackSummary: 'Participant-ranked opportunity', revisedStrategicFocus: opportunity.strategicOpportunity, justification: opportunity.prioritizationRationale || opportunity.potentialValue || 'Selected by participants', status: opportunity.source === 'human' ? 'SUBSTITUTED' : 'CONFIRMED' })),
+        executiveAlignmentRationale: 'Priorities reflect the latest participant ranking.', generatedAt: Date.now(), isConfirmed: true,
+      };
 
       try {
         const revRes = await fetch('/api/workshop/synthesize-revised-priorities', {
@@ -404,7 +404,9 @@ export default function App() {
           }),
         });
         if (revRes.ok) {
-          revisedOutput = await revRes.json();
+          // Participant ranking is authoritative; AI synthesis must not replace identities or order.
+          const synthesis: RevisedPrioritiesOutput = await revRes.json();
+          revisedOutput = { ...synthesis, revisedPriorities: revisedOutput.revisedPriorities };
         }
       } catch (e) {
         console.warn('Revised priorities API failed:', e);
@@ -580,6 +582,7 @@ export default function App() {
             isProcessing={isLoading}
             onChallengesChange={updateChallenges}
             onInteraction={logInteraction}
+            longList={session.longList || []}
           />
         )}
 
@@ -626,6 +629,10 @@ export default function App() {
           />
         )}
       </main>
+      <footer className="border-t border-slate-200 bg-white px-6 py-4 text-center text-xs text-slate-500">
+        <p>In Beta, developed in partnership with Cambridge Service Alliance and Cognitive Service Systems, Fraunhofer IAO.</p>
+        <p className="mt-1 text-[10px] text-slate-400">Partner logo assets pending: <code>cambridge-service-alliance-logo</code> and <code>fraunhofer-iao-logo</code>.</p>
+      </footer>
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { AIOpportunity, ReviewDecision, WorkshopInteractionInput } from '../types';
 import { createResearchId } from '../researchLog';
+import { downloadLongList } from '../longList';
 
 interface Page4ExploreOpportunitiesProps {
   opportunities: AIOpportunity[];
@@ -31,6 +32,7 @@ interface Page4ExploreOpportunitiesProps {
   onReviewsChange: (reviews: Record<string, ReviewDecision>) => void;
   onOpportunitiesChange: (opportunities: AIOpportunity[]) => void;
   onInteraction: (event: WorkshopInteractionInput) => void;
+  longList?: AIOpportunity[];
 }
 
 export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps> = ({
@@ -41,14 +43,14 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
   onReviewsChange,
   onOpportunitiesChange,
   onInteraction,
+  longList = [],
 }) => {
   const [items, setItems] = useState<AIOpportunity[]>(opportunities);
   const [reviews, setReviews] = useState<Record<string, ReviewDecision>>(initialReviews);
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
+  const [editDraft, setEditDraft] = useState<AIOpportunity | null>(null);
   const [resonance, setResonance] = useState<'yes' | 'partly' | 'no' | ''>('');
   const [feedback, setFeedback] = useState('');
 
@@ -71,16 +73,15 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
 
   const startEdit = (opportunity: AIOpportunity) => {
     setEditingId(opportunity.id);
-    setEditName(opportunity.name);
-    setEditDescription(opportunity.strategicOpportunity);
+    setEditDraft({ ...opportunity });
   };
 
   const saveEdit = (opportunity: AIOpportunity) => {
-    const name = editName.trim();
-    const description = editDescription.trim();
+    const name = editDraft?.name.trim() || '';
+    const description = editDraft?.strategicOpportunity.trim() || '';
     if (!name || !description) return;
     const revised: AIOpportunity = {
-      ...opportunity,
+      ...opportunity, ...editDraft,
       name,
       strategicOpportunity: description,
       source: opportunity.source === 'human' ? 'human' : 'ai_edited_by_human',
@@ -95,6 +96,7 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
       });
     }
     setEditingId(null);
+    setEditDraft(null);
   };
 
   const deleteOpportunity = (opportunity: AIOpportunity) => {
@@ -165,11 +167,13 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
           Representation • Sub-step 2A — Examine Opportunities
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
-          AI found {items.length} strategic opportunities
+          Strategy Unbounded has shortlisted {items.length} opportunities from the long list of {longList.length || 500}.
         </h1>
         <p className="text-sm text-slate-500">
-          Make each use case concrete: examine its data, AI approach, implementation, outputs, value, and assumptions before reviewing it.
+          Review each AI-generated opportunity, add your own opportunities as a group if needed, and then prioritise the opportunities.
         </p>
+        <p className="mt-2 text-xs text-slate-500">You can download the spreadsheet to revisit and examine the full long list.</p>
+        <button type="button" disabled={!longList.length} onClick={() => downloadLongList(longList)} className="mt-3 px-4 py-2 rounded-lg bg-white border border-indigo-200 text-xs font-bold text-indigo-700 disabled:opacity-40">Download long-list spreadsheet</button>
       </div>
 
       {/* Opportunities List */}
@@ -206,8 +210,15 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
                     <div className="flex items-center gap-2 flex-wrap">
                       {editingId === opp.id ? (
                         <div className="space-y-2 w-full">
-                          <input value={editName} onChange={(event) => setEditName(event.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-indigo-300 text-sm font-bold" aria-label="Opportunity title" />
-                          <textarea value={editDescription} onChange={(event) => setEditDescription(event.target.value)} rows={2} className="w-full px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs" aria-label="Opportunity description" />
+                          {editDraft && ([
+                            ['name','Opportunity title'], ['strategicOpportunity','Description'], ['challengesAddressed','Challenge addressed'],
+                            ['requiredProprietaryData','Required data'], ['aiUseCase','AI approach / expected outputs'], ['executionApproach','Implementation approach'],
+                            ['potentialValue','Strategic value'], ['keyAssumption','Assumptions / risks']
+                          ] as const).map(([key, label]) => (
+                            <label key={key} className="block text-[10px] font-bold text-slate-600">{label}
+                              <textarea value={key === 'challengesAddressed' ? editDraft.challengesAddressed.join('\n') : String(editDraft[key] || '')} onChange={(event) => setEditDraft(current => current ? ({ ...current, [key]: key === 'challengesAddressed' ? event.target.value.split('\n').filter(Boolean) : event.target.value }) : current)} rows={key === 'strategicOpportunity' ? 2 : 1} className="mt-0.5 w-full px-2.5 py-1.5 rounded-lg border border-indigo-300 text-xs" aria-label={label} />
+                            </label>
+                          ))}
                           <div className="flex gap-2">
                             <button onClick={() => saveEdit(opp)} className="text-[11px] font-bold text-indigo-700">Save revision</button>
                             <button onClick={() => setEditingId(null)} className="text-[11px] text-slate-500">Cancel</button>

@@ -17,15 +17,14 @@ const shortFields: { key: keyof WorkshopContext; label: string; placeholder: str
   { key: 'organization', label: 'Organization / Company', placeholder: 'Example: Acme Manufacturing' },
   { key: 'industry', label: 'Industry / Sector', placeholder: 'Example: Industrial manufacturing' },
   { key: 'businessUnit', label: 'Business Unit / Function', placeholder: 'Example: Global supply chain' },
-  { key: 'workshopTopic', label: 'Workshop Topic', placeholder: 'What are you exploring?' },
 ];
 
 const longFields: { key: keyof WorkshopContext; label: string; placeholder: string }[] = [
-  { key: 'workshopObjective', label: 'Workshop Objective', placeholder: 'What should this workshop help the group decide or achieve?' },
+  { key: 'strategicPriorities', label: 'Strategic Business Priority', placeholder: 'Relevant goals, outcomes, or strategic commitments.' },
+  { key: 'objective', label: 'Objective', placeholder: 'What should this exercise help the group decide or achieve?' },
   { key: 'processScope', label: 'Process / Workflow in Scope', placeholder: 'Which process, service, workflow, or decision is in scope?' },
-  { key: 'stakeholders', label: 'Key Stakeholders / Users', placeholder: 'Who uses, owns, or is affected by this process?' },
-  { key: 'currentChallenges', label: 'Current Challenges or Pain Points', placeholder: 'Known pain points or uncertainties (optional—the Search stage will develop these).' },
-  { key: 'strategicPriorities', label: 'Strategic Priorities', placeholder: 'Relevant goals, outcomes, or strategic commitments.' },
+  { key: 'currentChallenges', label: 'Current Pain Points', placeholder: 'Known pain points or uncertainties.' },
+  { key: 'stakeholders', label: 'Stakeholders / Users', placeholder: 'Who uses, owns, or is affected by this process?' },
   { key: 'constraints', label: 'Constraints', placeholder: 'Budget, timing, policy, technology, data, or operating constraints.' },
 ];
 
@@ -41,14 +40,13 @@ export const WorkshopContextForm: React.FC<WorkshopContextFormProps> = ({
   };
 
   const handleSave = () => {
-    const topic = context.workshopTopic?.trim() || context.title?.trim() || '';
-    const objective = context.workshopObjective?.trim() || context.objective?.trim() || '';
+    const objective = context.objective?.trim() || context.workshopObjective?.trim() || '';
     onSave({
       ...context,
-      title: topic,
+      title: context.title || context.organization || context.businessUnit || 'AI Opportunity Priorities',
       objective,
-      workshopTopic: topic,
-      workshopObjective: objective,
+      workshopTopic: undefined,
+      workshopObjective: undefined,
     });
   };
 
@@ -62,10 +60,10 @@ export const WorkshopContextForm: React.FC<WorkshopContextFormProps> = ({
           Search Preparation • Sub-step 1A
         </span>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight font-serif-title mb-2">
-          Workshop Context
+          Exercise Context
         </h1>
         <p className="text-sm text-slate-500 max-w-2xl mx-auto">
-          Provide relevant organizational, business, process, and workshop context so the AI can generate more relevant challenges and opportunities. All fields are optional.
+          Provide relevant organisational, business, and process context so the AI can support your exercise. All fields are optional.
         </p>
       </div>
 
@@ -104,7 +102,7 @@ export const WorkshopContextForm: React.FC<WorkshopContextFormProps> = ({
           <textarea
             value={context.additionalContext || ''}
             onChange={(event) => update('additionalContext', event.target.value)}
-            placeholder="Describe the organization, process, strategic challenge, or any other relevant background information for this workshop."
+            placeholder="Describe any other relevant background information for this exercise."
             rows={5}
             className="w-full px-3.5 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-sm leading-relaxed resize-y"
           />

@@ -182,197 +182,22 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
   // Export Editable PowerPoint (.pptx)
   const handleExportPPTX = async () => {
     try {
-      setIsExporting('Creating Editable PowerPoint (.pptx)...');
-      const pptx = new pptxgen();
-      pptx.layout = 'LAYOUT_16x9';
-      pptx.author = 'Strategy Unbounded Platform';
-      pptx.title = `Executive Strategy Brief: ${context.title}`;
-
-      // Slide 1: Landscape Table
-      const s1 = pptx.addSlide();
-      s1.background = { color: 'F8FAFC' };
-
-      s1.addText('STRATEGY UNBOUNDED  |  EXECUTIVE STRATEGY BRIEF', {
-        x: 0.6,
-        y: 0.4,
-        w: 8.0,
-        h: 0.3,
-        fontSize: 10,
-        color: '4F46E5',
-        bold: true,
-      });
-
-      s1.addText('STRATEGIC OPPORTUNITY LANDSCAPE & AI ROADMAP', {
-        x: 0.6,
-        y: 0.7,
-        w: 9.0,
-        h: 0.4,
-        fontSize: 16,
-        color: '0F172A',
-        bold: true,
-      });
-
-      s1.addText(
-        [context.organization, context.workshopTopic || context.title, context.processScope]
-          .filter(Boolean)
-          .join('  |  '),
-        { x: 0.6, y: 1.08, w: 11.8, h: 0.2, fontSize: 8, color: '64748B' }
-      );
-
-      // Table Header & Rows
-      const tableData = [
-        [
-          { text: 'Rank & Name', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Challenge Addressed', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Why Now / Use Case', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Execution Plan', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Data / Dependencies', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Cost', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-          { text: 'Timeline', options: { bold: true, fill: '1E293B', color: 'FFFFFF' } },
-        ],
-        ...opportunities.slice(0, 8).map((opp, idx) => [
-          { text: `#${idx + 1} ${opp.name}`, options: { bold: idx < 3, color: idx < 3 ? '4F46E5' : '0F172A' } },
-          { text: opp.challengesAddressed[0] || 'Supplier volatility' },
-          { text: opp.whyNow || opp.aiUseCase },
-          { text: opp.executionApproach },
-          { text: `Proprietary: ${opp.requiredProprietaryData}` },
-          { text: opp.cost },
-          { text: opp.timeline },
-        ]),
-      ];
-
-      s1.addTable(tableData, {
-        x: 0.5,
-        y: 1.3,
-        w: 12.33,
-        h: 5.4,
-        fontSize: 8.5,
-        border: { color: 'CBD5E1', pt: 0.5 },
-      });
-
-      // Slide 2: Top 3 Priorities
-      const s2 = pptx.addSlide();
-      s2.background = { color: 'F8FAFC' };
-
-      s2.addText('STRATEGY UNBOUNDED  |  EXECUTIVE DECISION SUITE', {
-        x: 0.6,
-        y: 0.4,
-        w: 8.0,
-        h: 0.3,
-        fontSize: 10,
-        color: '4F46E5',
-        bold: true,
-      });
-
-      s2.addText('TOP 3 STRATEGIC PRIORITIES & MOBILIZATION ROADMAP', {
-        x: 0.6,
-        y: 0.7,
-        w: 9.0,
-        h: 0.4,
-        fontSize: 16,
-        color: '0F172A',
-        bold: true,
-      });
-
-      top3Priorities.forEach((p, idx) => {
-        const xPos = 0.5 + idx * 4.2;
-
-        s2.addShape(pptx.ShapeType.roundRect, {
-          x: xPos,
-          y: 1.4,
-          w: 3.9,
-          h: 4.8,
-          fill: { color: 'FFFFFF' },
-          line: { color: 'CBD5E1', width: 1 },
-        });
-
-        s2.addText(`PRIORITY #${p.rank}`, {
-          x: xPos + 0.2,
-          y: 1.6,
-          w: 3.5,
-          h: 0.25,
-          fontSize: 10,
-          color: '4F46E5',
-          bold: true,
-        });
-
-        s2.addText(p.name, {
-          x: xPos + 0.2,
-          y: 1.85,
-          w: 3.5,
-          h: 0.6,
-          fontSize: 13,
-          color: '0F172A',
-          bold: true,
-        });
-
-        s2.addText(p.rationale, {
-          x: xPos + 0.2,
-          y: 2.5,
-          w: 3.5,
-          h: 0.8,
-          fontSize: 9.5,
-          color: '475569',
-        });
-
-        s2.addText(`Impact: ${p.impact} | Cost: ${p.cost} | Pilot: ${p.pilot}`, {
-          x: xPos + 0.2,
-          y: 3.35,
-          w: 3.5,
-          h: 0.3,
-          fontSize: 8.5,
-          color: '059669',
-          bold: true,
-        });
-
-        s2.addText(`Next Step: ${p.nextStep}`, {
-          x: xPos + 0.2,
-          y: 3.75,
-          w: 3.5,
-          h: 1.0,
-          fontSize: 9,
-          color: '1E293B',
-        });
-
-        s2.addText(`Success Factor: ${p.successFactor}`, {
-          x: xPos + 0.2,
-          y: 4.8,
-          w: 3.5,
-          h: 0.9,
-          fontSize: 8.5,
-          color: 'D97706',
-          bold: true,
-        });
-      });
-
-      // Bottom Timeline Bar
-      s2.addShape(pptx.ShapeType.rect, {
-        x: 0.5,
-        y: 6.4,
-        w: 12.33,
-        h: 0.6,
-        fill: { color: '0F172A' },
-      });
-
-      s2.addText(
-        'IMPLEMENTATION SEQUENCE: 0–5 Days (Synthetic War-Gaming)  ➜  Weeks 1–5 (Supplier Radar & Rerouting Pilots)  ➜  Months 2–5 (Enterprise Rollout)',
-        {
-          x: 0.7,
-          y: 6.55,
-          w: 11.9,
-          h: 0.3,
-          fontSize: 9,
-          color: 'FFFFFF',
-          bold: true,
-        }
-      );
-
+      setIsExporting('Creating executive PowerPoint...');
+      const pptx = new pptxgen(); pptx.layout = 'LAYOUT_16x9';
+      pptx.author = 'Strategy Unbounded Agent';
+      const audience = [context.organization, context.businessUnit].filter(Boolean).join(' / ');
+      const deckTitle = `Strategy Unbounded: AI Opportunity Priorities${audience ? ` for ${audience}` : ''}`;
+      const priorities = top3Priorities.slice(0, 4);
+      const title = pptx.addSlide(); title.background = { color: '0F172A' };
+      title.addText(deckTitle, { x: 0.8, y: 2.4, w: 11.7, h: 1.2, fontSize: 30, bold: true, color: 'FFFFFF', align: 'center' });
+      title.addText([context.industry, sessionDate].filter(Boolean).join('  |  '), { x: 1, y: 3.8, w: 11.3, h: 0.4, fontSize: 15, color: 'A5B4FC', align: 'center' });
+      const summary = pptx.addSlide();
+      summary.addText('Executive Summary', { x: .6, y: .4, w: 12, h: .5, fontSize: 26, bold: true, color: '312E81' });
+      summary.addText(`We conducted a Strategy Unbounded exercise to identify the most significant AI opportunities for our business.\n\nWorking with the Strategy Unbounded Agent as a sparring partner and devil’s advocate, we explored a broad opportunity space, challenged our assumptions, and agreed to further explore the following priority opportunities.`, { x: .7, y: 1.1, w: 12, h: 1.2, fontSize: 15, color: '334155' });
+      summary.addTable([['Opportunity','Challenge addressed','Strategic value','Priority / rationale'], ...priorities.map(p => { const o=opportunities.find(x=>x.name===p.name); return [p.name,o?.challengesAddressed.join('; ')||'',o?.potentialValue||p.impact,p.rationale]; })], { x:.7,y:2.6,w:12,border:{color:'CBD5E1'},fontSize:10,color:'1E293B',fill:{color:'F8FAFC'} });
+      priorities.forEach((p, index) => { const o=opportunities.find(x=>x.name===p.name); const slide=pptx.addSlide(); slide.addText(`#${index+1} ${p.name}`,{x:.6,y:.35,w:12,h:.6,fontSize:24,bold:true,color:'312E81'}); const rows=[['Challenge addressed',o?.challengesAddressed.join('; ')||'Participant-confirmed challenge'],['AI approach',o?.aiUseCase||''],['Required data',[o?.requiredProprietaryData,o?.relevantPublicData].filter(Boolean).join('; ')],['Implementation approach',o?.executionApproach||''],['Expected outputs',o?.aiUseCase||''],['Strategic value',o?.potentialValue||p.rationale],['Key assumptions / risks',o?.keyAssumption||p.successFactor],['Next steps',p.nextStep]]; slide.addTable(rows,{x:.7,y:1.2,w:11.9,border:{color:'CBD5E1'},fontSize:12,color:'1E293B',fill:{color:'F8FAFC'},rowH:.58}); });
       await pptx.writeFile({ fileName: `${cleanTitle}_Executive_Slides.pptx` });
-    } catch (err: any) {
-      console.error('PPTX export error:', err);
-    } finally {
-      setIsExporting(null);
-    }
+    } catch (err) { console.error('PPTX export error:', err); } finally { setIsExporting(null); }
   };
 
   // Export Active Slide as High-Res PNG
@@ -408,7 +233,7 @@ export const Page6FinalResults: React.FC<Page6FinalResultsProps> = ({
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 font-mono block mb-1">
-            Aggregation • Sub-step 3C — Final Decision &amp; Report
+            Aggregation • Sub-step 3C — Aggregated Summary
           </span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight font-serif-title">
             Two-Page Executive Strategy Deck

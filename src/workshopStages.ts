@@ -16,11 +16,11 @@ export const WORKSHOP_STAGES: readonly MainStageDefinition[] = [
   {
     id: 'search',
     label: 'Search',
-    purpose: 'Broaden the search space and identify strategic AI opportunities.',
+    purpose: 'Conduct an unbounded search to identify strategic AI opportunities.',
     steps: [
       { id: 2, code: '1A', label: 'Prepare Context' },
       { id: 2, code: '1B', label: 'Identify Challenges' },
-      { id: 3, code: '1C', label: 'Explore AI Opportunities' },
+      { id: 3, code: '1C', label: 'Confirm Challenges' },
     ],
   },
   {
@@ -36,7 +36,7 @@ export const WORKSHOP_STAGES: readonly MainStageDefinition[] = [
     steps: [
       { id: 4, code: '3A', label: 'Review & Prioritize' },
       { id: 5, code: '3B', label: 'Stress Test' },
-      { id: 6, code: '3C', label: 'Final Decision' },
+      { id: 6, code: '3C', label: 'Aggregated Summary' },
     ],
   },
 ] as const;
@@ -55,8 +55,8 @@ export const getStageEntryStep = (stage: MainStage) =>
 
 export const getSubstepForStep = (step: number) => {
   if (step === 2) return { code: '1B', label: 'Identify Challenges' };
-  if (step === 3) return { code: '1C', label: 'Explore AI Opportunities' };
+  if (step === 3) return { code: '1C', label: 'Confirm Challenges' };
   if (step === 4) return { code: '2A', label: 'Examine Opportunities' };
   if (step === 5) return { code: '3B', label: 'Stress Test' };
-  return { code: '3C', label: 'Final Decision' };
+  return { code: '3C', label: 'Aggregated Summary' };
 };
