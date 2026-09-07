@@ -340,9 +340,15 @@ export default function App() {
     }
   };
 
-  // --- Page 3 -> Page 4: Confirm Understanding & Explore Opportunities ---
-  const handleConfirmUnderstanding = async (confirmedData: HumanDiscussionData) => {
+  const generateOpportunities = async (confirmedData: HumanDiscussionData) => {
     setIsLoading(true);
+    setSession((prev) => ({
+      ...prev,
+      exploration: null,
+      longList: [],
+      humanReview: { reviews: {}, whiteboardFeedback: null },
+      updatedAt: Date.now(),
+    }));
     try {
       let explorationResult: AIExplorationOutput | null = null;
 
@@ -354,17 +360,26 @@ export default function App() {
             humanDiscussion: confirmedData,
             contextTitle: session.context.title,
             workshopContext: session.context,
+            challengeEntities: session.challengeEntities || [],
+            generationNonce: `${Date.now()}-${Math.random()}`,
           }),
         });
         if (res.ok) {
           explorationResult = await res.json();
+        } else {
+          console.error(`Opportunity generation endpoint returned HTTP ${res.status}.`);
         }
       } catch (e) {
         console.warn('Exploration API failed, using dynamic input-based fallback:', e);
       }
 
       if (!explorationResult) {
-        explorationResult = buildDynamicOpportunityShortlist(confirmedData, session.context);
+        const requestId = `browser-fallback-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        explorationResult = buildDynamicOpportunityShortlist(confirmedData, session.context, requestId);
+        explorationResult.generationMetadata = {
+          provider: 'gemini', model: 'unavailable', generatedAt: Date.now(), requestId, generationMode: 'fallback',
+        };
+        console.warn('[OpportunityGeneration] Explicit degraded browser fallback is active.', explorationResult.generationMetadata);
       }
 
       explorationResult = {
@@ -378,7 +393,14 @@ export default function App() {
           originalAIValue: opportunity.originalAIValue || { ...opportunity },
         })),
       };
-      const longList = buildLongList(explorationResult.opportunities, confirmedData.challenges, session.context);
+      console.info('[OpportunityGeneration] Response metadata', explorationResult.generationMetadata);
+      const longList = buildLongList(
+        explorationResult.opportunities,
+        confirmedData.challenges,
+        session.context,
+        500,
+        explorationResult.candidateSpace,
+      );
 
       setSession((prev) => ({
         ...prev,
@@ -392,6 +414,19 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // --- Page 3 -> Page 4: Confirm Understanding & Explore Opportunities ---
+  const handleConfirmUnderstanding = async (confirmedData: HumanDiscussionData) => {
+    await generateOpportunities(confirmedData);
+  };
+
+  const handleRegenerateOpportunities = async () => {
+    await generateOpportunities({
+      ...session.humanDiscussion,
+      challenges: (session.challengeEntities || []).map((challenge) => challenge.text),
+      isConfirmed: true,
+    });
   };
 
   // --- Page 4 -> Page 5: Confirm Top 3 & Prepare Stress Test ---
@@ -600,9 +635,11 @@ export default function App() {
 
         {!isEditingContext && currentStage === 4 && (
           <Page4ExploreOpportunities
-            opportunities={session.exploration?.opportunities || buildDynamicOpportunityShortlist(session.humanDiscussion, session.context).opportunities}
+            opportunities={session.exploration?.opportunities || []}
             onConfirmTop3={handleConfirmTop3}
             isSubmitting={isLoading}
+            isRegenerating={isLoading}
+            onRegenerate={handleRegenerateOpportunities}
             initialReviews={Object.fromEntries(
               Object.entries(session.humanReview?.reviews || {}).map(([id, review]) => [
                 id,
@@ -622,6 +659,7 @@ export default function App() {
             }))}
             onOpportunitiesChange={updateOpportunities}
             onInteraction={logInteraction}
+            longList={session.longList || []}
           />
         )}
 

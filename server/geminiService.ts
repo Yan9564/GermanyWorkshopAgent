@@ -18,6 +18,20 @@ import {
 } from '../src/types';
 import { buildDynamicOpportunityShortlist } from '../src/dynamicOpportunities';
 
+export const OPPORTUNITY_MODEL = 'gemini-3.7-flash';
+
+const createRequestId = () => `generation-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const isOpportunity = (value: unknown): value is AIExplorationOutput['opportunities'][number] => {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  const requiredStrings = ['id', 'number', 'name', 'whyNow', 'aiUseCase', 'strategicOpportunity', 'executionApproach', 'requiredProprietaryData', 'relevantPublicData', 'relevantStakeholders', 'keyAssumption', 'potentialValue', 'prioritizationRationale'];
+  return requiredStrings.every((field) => typeof item[field] === 'string' && Boolean((item[field] as string).trim()))
+    && Array.isArray(item.challengesAddressed) && item.challengesAddressed.length > 0
+    && ['$', '$$', '$$$'].includes(String(item.cost))
+    && ['<5 days', '<5 weeks', '<5 months'].includes(String(item.timeline));
+};
+
 // Lazy initialization of Gemini client
 let genAIClient: GoogleGenAI | null = null;
 
@@ -53,7 +67,7 @@ function parseCleanJson<T>(rawText: string, fallback: T): T {
     }
     return JSON.parse(cleaned) as T;
   } catch (err) {
-    console.error('[GeminiService] Failed to parse JSON response:', err, '\nRaw text was:', rawText);
+    console.error('[GeminiService] Failed to parse JSON response:', err, { responseLength: rawText.length });
     return fallback;
   }
 }
@@ -195,133 +209,108 @@ Respond with strict JSON matching this schema:
 export async function generateAIOpportunities(
   humanDiscussion: HumanDiscussionData,
   contextTitle: string,
-  workshopContext?: Partial<WorkshopContext>
+  workshopContext?: Partial<WorkshopContext>,
+  manuallyEditedChallenges: string[] = [],
 ): Promise<AIExplorationOutput> {
   const ai = getGenAI();
+  const requestId = createRequestId();
+  const generatedAt = Date.now();
+  const sourceOfTruth = {
+    workshopContext: { ...(workshopContext || {}), title: workshopContext?.title || contextTitle },
+    searchStageInput: {
+      confirmedChallenges: humanDiscussion.challenges || [],
+      manuallyEditedChallenges,
+      initialAIIdeas: humanDiscussion.initialAIIdeas || [],
+      rawTextNotes: humanDiscussion.rawTextNotes || '',
+      whiteboardExtractedChallenges: humanDiscussion.whiteboardExtractedChallenges || [],
+      isConfirmed: humanDiscussion.isConfirmed,
+    },
+  };
+  const contextFieldLengths = Object.entries(sourceOfTruth.workshopContext)
+    .filter(([, value]) => typeof value === 'string' && value.trim())
+    .map(([field, value]) => ({ field, length: String(value).length }));
+  const searchFieldLengths = Object.entries(sourceOfTruth.searchStageInput).map(([field, value]) => ({
+    field,
+    length: Array.isArray(value) ? value.length : typeof value === 'string' ? value.length : Number(Boolean(value)),
+  }));
+  console.info('[GeminiService] Opportunity generation request', { requestId, contextFieldLengths, searchFieldLengths });
 
-  const fallbackOpportunities: AIExplorationOutput = buildDynamicOpportunityShortlist(humanDiscussion, workshopContext);
-
+  const fallback = buildDynamicOpportunityShortlist(humanDiscussion, workshopContext, requestId);
+  fallback.generationMetadata = {
+    provider: 'gemini', model: OPPORTUNITY_MODEL, generatedAt, requestId, generationMode: 'fallback',
+  };
   if (!ai) {
-    return fallbackOpportunities;
+    console.warn(`[GeminiService] ${requestId} using explicit degraded fallback: GEMINI_API_KEY is unavailable.`);
+    return fallback;
   }
 
   try {
-    const formattedContext = formatWorkshopContext(workshopContext);
-    const prompt = `You are a world-class executive strategy advisor facilitating a high-stakes executive workshop on "${contextTitle}".
+    const prompt = `You are a world-class executive strategy advisor. Generate a fresh opportunity set for request ${requestId}.
 
-${formattedContext ? `${formattedContext}\n\nUse the workshop context to improve relevance, but do not invent company-specific facts. Generate opportunities relevant to the stated organization, process, stakeholders, strategic priorities, and constraints.\n` : ''}
+SOURCE OF TRUTH (JSON):
+${JSON.stringify(sourceOfTruth, null, 2)}
 
-The executive group has completed SEARCH (Prepare Context and Identify Challenges) and provided their confirmed challenges and initial AI ideas:
+Use every populated source field. Confirmed and manually edited challenges are authoritative. Preserve participant meaning and do not invent organisation-specific facts. Reason afresh for this request: do not use a fixed opportunity catalogue or recurring named archetypes. Explore materially different intervention points, users, decisions, workflows, and value mechanisms while remaining practical and grounded.
 
-HUMAN-IDENTIFIED CHALLENGES:
-${humanDiscussion.challenges.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+First derive a broad candidate space with themes, value levers, AI methods, and delivery patterns grounded in the source of truth. Then synthesize and rank exactly 8 distinct strategic AI opportunities from that space. Balance relevance, impact, urgency, data availability, feasibility, cost, speed, and decision quality. Exactly three must be marked as top priorities.
 
-HUMAN INITIAL AI IDEAS:
-${humanDiscussion.initialAIIdeas.map((idea, i) => `${i + 1}. ${idea}`).join('\n')}
-
-${humanDiscussion.rawTextNotes ? `ADDITIONAL TEAM NOTES: ${humanDiscussion.rawTextNotes}` : ''}
-
-STAGE 3 TASK:
-1. Conduct a concise executive Challenge Assessment of the human-identified challenges (strategic significance, 2-3 yr horizon impact, urgency & likelihood, cross-ecosystem dependencies, key assumptions/overlaps). Preserve the executive group's framing.
-2. Identify exactly 8 distinct, strategically significant AI-enabled opportunities that address the team's challenges.
-   Each opportunity MUST:
-   - address one or more participant-defined challenges;
-   - be materially different from the others;
-   - represent a meaningful strategic response;
-   - avoid generic AI buzzwords;
-   - be specific enough for executive C-suite discussion.
-   - specify:
-     * id (e.g. "opp-1", "opp-2", etc.)
-     * number (e.g. "01", "02", etc.)
-     * name
-     * challengesAddressed (array of strings matching their inputs)
-     * whyNow (technological or macroeconomic catalyst)
-     * aiUseCase (exact AI technique/architecture)
-     * strategicOpportunity (business impact and resilience outcome)
-     * executionApproach (brief 1-2 sentence rollout path)
-     * requiredProprietaryData
-     * relevantPublicData
-     * relevantStakeholders (roles affected by or accountable for the use case)
-     * keyAssumption (the most important assumption to validate)
-     * potentialValue (the expected organizational or process value)
-     * cost: "$" (low), "$$" (medium), or "$$$" (high)
-     * timeline: "<5 days", "<5 weeks", or "<5 months"
-     * priorityTier: "High", "Medium", or "Low"
-     * isTopPriority: boolean (true for exactly top 3)
-     * top3Ranking: number (1, 2, or 3 for the top 3, omitted for others)
-     * prioritizationRationale: string (for top 3)
-3. Rank the Top 3 priorities with explicit justification balancing impact, urgency, data availability, feasibility, cost, speed, and decision quality.
-
-Return strict JSON matching this structure:
+Return strict JSON with this shape:
 {
   "challengeAssessment": {
-    "strategicSignificance": "string",
-    "impactNext2To3Years": "string",
-    "urgencyAndLikelihood": "string",
-    "crossEcosystemDependencies": "string",
+    "strategicSignificance": "string", "impactNext2To3Years": "string",
+    "urgencyAndLikelihood": "string", "crossEcosystemDependencies": "string",
     "keyAssumptionsOrOverlaps": "string"
   },
-  "opportunities": [
-    {
-      "id": "opp-1",
-      "number": "01",
-      "name": "string",
-      "challengesAddressed": ["string"],
-      "whyNow": "string",
-      "aiUseCase": "string",
-      "strategicOpportunity": "string",
-      "executionApproach": "string",
-      "requiredProprietaryData": "string",
-      "relevantPublicData": "string",
-      "relevantStakeholders": "string",
-      "keyAssumption": "string",
-      "potentialValue": "string",
-      "cost": "$$",
-      "timeline": "<5 weeks",
-      "priorityTier": "High",
-      "isTopPriority": true,
-      "top3Ranking": 1,
-      "prioritizationRationale": "string"
-    }
-  ],
-  "top3Priorities": [
-    {
-      "rank": 1,
-      "opportunityId": "opp-1",
-      "name": "string",
-      "rationale": "string"
-    }
-  ],
+  "candidateSpace": {
+    "themes": ["string"], "valueLevers": ["string"],
+    "aiMethods": ["string"], "deliveryPatterns": ["string"]
+  },
+  "opportunities": [{
+    "id": "temporary-id", "number": "01", "name": "string",
+    "challengesAddressed": ["participant input"], "whyNow": "string",
+    "aiUseCase": "specific AI technique or architecture", "strategicOpportunity": "string",
+    "executionApproach": "string", "requiredProprietaryData": "string",
+    "relevantPublicData": "string", "relevantStakeholders": "string",
+    "keyAssumption": "string", "potentialValue": "string",
+    "cost": "$ or $$ or $$$", "timeline": "<5 days or <5 weeks or <5 months",
+    "priorityTier": "High or Medium or Low", "isTopPriority": true,
+    "top3Ranking": 1, "prioritizationRationale": "string"
+  }],
+  "top3Priorities": [{"rank": 1, "opportunityId": "temporary-id", "name": "string", "rationale": "string"}],
   "prioritisationOverview": "string"
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: OPPORTUNITY_MODEL,
       contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3,
-      },
+      config: { responseMimeType: 'application/json', temperature: 0.85 },
     });
-
-    const parsed = parseCleanJson<AIExplorationOutput>(response.text || '', fallbackOpportunities);
+    const parsed = parseCleanJson<AIExplorationOutput>(response.text || '', fallback);
+    if (!Array.isArray(parsed.opportunities) || parsed.opportunities.length < 8 || !parsed.opportunities.slice(0, 8).every(isOpportunity)) {
+      console.error(`[GeminiService] ${requestId} returned an invalid schema; using degraded fallback.`);
+      return fallback;
+    }
     parsed.opportunities = parsed.opportunities.slice(0, 8).map((opportunity, index) => ({
       ...opportunity,
+      id: `${requestId}-opp-${index + 1}`,
       number: String(index + 1).padStart(2, '0'),
       isTopPriority: index < 3,
       top3Ranking: index < 3 ? index + 1 : undefined,
     }));
     parsed.top3Priorities = parsed.opportunities.slice(0, 3).map((opportunity, index) => ({
-      rank: index + 1,
-      opportunityId: opportunity.id,
-      name: opportunity.name,
+      rank: index + 1, opportunityId: opportunity.id, name: opportunity.name,
       rationale: opportunity.prioritizationRationale || 'Ranked for relevance, value, and feasibility.',
     }));
     parsed.generatedAt = Date.now();
+    parsed.generationMetadata = {
+      provider: 'gemini', model: OPPORTUNITY_MODEL, generatedAt: parsed.generatedAt,
+      requestId, generationMode: 'gemini',
+    };
     return parsed;
   } catch (error) {
-    console.error('[GeminiService] Error generating AI opportunities:', error);
-    return fallbackOpportunities;
+    console.error(`[GeminiService] ${requestId} Gemini generation failed:`, error);
+    console.warn(`[GeminiService] ${requestId} using explicit degraded fallback after Gemini failure.`);
+    return fallback;
   }
 }
 

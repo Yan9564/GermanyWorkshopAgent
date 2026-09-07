@@ -25,6 +25,7 @@ const hash = (value: string) => {
 export const buildDynamicOpportunityShortlist = (
   discussion: HumanDiscussionData,
   context: Partial<WorkshopContext> = {},
+  generationToken = '',
 ): AIExplorationOutput => {
   const rawInputs = [
     ...(discussion.challenges || []),
@@ -36,7 +37,7 @@ export const buildDynamicOpportunityShortlist = (
   const process = compact(context.processScope, 'the process in scope');
   const organization = compact(context.organization, 'the organisation');
   const focusInputs = challenges.length ? challenges : [objective, process];
-  const signature = hash(JSON.stringify({ context, rawInputs }));
+  const signature = hash(JSON.stringify({ context, rawInputs, generationToken }));
 
   const patterns = [
     ['Early-Signal Radar', 'detect emerging patterns and provide timely, evidence-linked alerts', 'anomaly detection and semantic signal classification'],
@@ -95,6 +96,12 @@ export const buildDynamicOpportunityShortlist = (
       rationale: opportunity.prioritizationRationale || '',
     })),
     prioritisationOverview: `Eight opportunities were generated from the current exercise context and ${challenges.length || 1} Search input${challenges.length === 1 ? '' : 's'}, then ranked for relevance and testability.`,
+    candidateSpace: {
+      themes: focusInputs.map(shortLabel),
+      valueLevers: ['decision quality', 'time saved', 'service quality', 'risk reduction', 'capacity'],
+      aiMethods: patterns.map(([, , technique]) => technique),
+      deliveryPatterns: ['assistant', 'decision support', 'monitoring', 'simulation', 'workflow integration'],
+    },
     generatedAt: Date.now(),
   };
 };
