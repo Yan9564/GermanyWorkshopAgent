@@ -16,6 +16,21 @@ import {
   UploadedWhiteboard,
   WorkshopContext,
 } from '../src/types';
+import { buildDynamicOpportunityShortlist } from '../src/dynamicOpportunities';
+
+export const OPPORTUNITY_MODEL = 'gemini-3.7-flash';
+
+const createRequestId = () => `generation-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const isOpportunity = (value: unknown): value is AIExplorationOutput['opportunities'][number] => {
+  if (!value || typeof value !== 'object') return false;
+  const item = value as Record<string, unknown>;
+  const requiredStrings = ['id', 'number', 'name', 'whyNow', 'aiUseCase', 'strategicOpportunity', 'executionApproach', 'requiredProprietaryData', 'relevantPublicData', 'relevantStakeholders', 'keyAssumption', 'potentialValue', 'prioritizationRationale'];
+  return requiredStrings.every((field) => typeof item[field] === 'string' && Boolean((item[field] as string).trim()))
+    && Array.isArray(item.challengesAddressed) && item.challengesAddressed.length > 0
+    && ['$', '$$', '$$$'].includes(String(item.cost))
+    && ['<5 days', '<5 weeks', '<5 months'].includes(String(item.timeline));
+};
 
 // Lazy initialization of Gemini client
 let genAIClient: GoogleGenAI | null = null;
@@ -52,7 +67,7 @@ function parseCleanJson<T>(rawText: string, fallback: T): T {
     }
     return JSON.parse(cleaned) as T;
   } catch (err) {
-    console.error('[GeminiService] Failed to parse JSON response:', err, '\nRaw text was:', rawText);
+    console.error('[GeminiService] Failed to parse JSON response:', err, { responseLength: rawText.length });
     return fallback;
   }
 }
@@ -189,292 +204,113 @@ Respond with strict JSON matching this schema:
 }
 
 /**
- * Generate 8-10 distinct AI-enabled strategic opportunities (SEARCH — Explore AI Opportunities)
+ * Generate 8 distinct AI-enabled strategic opportunities (SEARCH — Explore AI Opportunities)
  */
 export async function generateAIOpportunities(
   humanDiscussion: HumanDiscussionData,
   contextTitle: string,
-  workshopContext?: Partial<WorkshopContext>
+  workshopContext?: Partial<WorkshopContext>,
+  manuallyEditedChallenges: string[] = [],
 ): Promise<AIExplorationOutput> {
   const ai = getGenAI();
-
-  const fallbackOpportunities: AIExplorationOutput = {
-    challengeAssessment: {
-      strategicSignificance: 'High systemic vulnerability across extended multi-tier supply networks and interconnected digital logistics channels.',
-      impactNext2To3Years: 'Severe financial and reputational downside if single-point component failures or cyber/physical disruptions cascade unchecked.',
-      urgencyAndLikelihood: 'High likelihood of recurring regional bottlenecks; immediate urgency to establish predictive weak-signal monitoring.',
-      crossEcosystemDependencies: 'Critical dependencies across Tier-2/3 raw material suppliers, 3PL logistics carriers, customs brokers, and enterprise ERP backbones.',
-      keyAssumptionsOrOverlaps: 'Assumes partner ecosystem willingness to share authenticated operational telemetry and federated data streams.',
+  const requestId = createRequestId();
+  const generatedAt = Date.now();
+  const sourceOfTruth = {
+    workshopContext: { ...(workshopContext || {}), title: workshopContext?.title || contextTitle },
+    searchStageInput: {
+      confirmedChallenges: humanDiscussion.challenges || [],
+      manuallyEditedChallenges,
+      initialAIIdeas: humanDiscussion.initialAIIdeas || [],
+      rawTextNotes: humanDiscussion.rawTextNotes || '',
+      whiteboardExtractedChallenges: humanDiscussion.whiteboardExtractedChallenges || [],
+      isConfirmed: humanDiscussion.isConfirmed,
     },
-    opportunities: [
-      {
-        id: 'opp-1',
-        number: '01',
-        name: 'Predictive Multi-Tier Supplier Weak-Signal Radar',
-        challengesAddressed: ['Single-source tier-2 chip and sensor suppliers', 'Geopolitical volatility'],
-        whyNow: 'Advancements in multi-modal knowledge graphs and open-source intelligence enable early detection of distress before order cancellation.',
-        aiUseCase: 'Graph neural networks + weak-signal news/satellite NLP tracking financial stress, labor disputes, and regional anomalies across tier-1 to tier-3 nodes.',
-        strategicOpportunity: 'Convert reactive emergency expediting into 14-day advance re-allocation, protecting gross margin and critical SLAs.',
-        executionApproach: 'Integrate existing procurement master data with commercial trade-lane intelligence feeds; deploy automated risk scoring dashboard.',
-        requiredProprietaryData: 'Tier-1 supplier Bill of Materials (BOM), historical purchase orders, component lead times, and SLA penalty clauses.',
-        relevantPublicData: 'Global customs manifests (Bills of Lading), localized weather anomalies, regional regulatory notices, satellite port traffic.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 1,
-        prioritizationRationale: 'Highest immediate impact on service continuity by addressing unmonitored Tier-2/3 blind spots with minimal upfront ERP friction.',
-      },
-      {
-        id: 'opp-2',
-        number: '02',
-        name: 'Dynamic 3PL Transit Interruption & Autonomous Freight Rerouting',
-        challengesAddressed: ['Port congestion and customs bottlenecks', '3PL transit untracked delays'],
-        whyNow: 'Real-time IoT container feeds paired with predictive ETA machine learning can simulate trade-lane choke points in minutes.',
-        aiUseCase: 'Reinforcement learning & spatial graph optimization predicting container dwell times and auto-generating alternate carrier routing plans.',
-        strategicOpportunity: 'Reduce transit delay variances from 21 days to under 48 hours; safeguard just-in-time delivery for high-value product lines.',
-        executionApproach: 'Connect telematics APIs from top 5 logistics carriers into a unified route simulator; provide one-click dispatcher approvals.',
-        requiredProprietaryData: 'Carrier contracts, real-time EDI/API shipping milestones, warehouse receiving capacities, dynamic freight rate cards.',
-        relevantPublicData: 'AIS vessel telemetry, port terminal dwell indexes, border customs processing queue metrics, weather forecasts.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 2,
-        prioritizationRationale: 'Directly mitigates primary logistics choke points with quantifiable ROI in reduced demurrage fees and preserved customer delivery SLAs.',
-      },
-      {
-        id: 'opp-3',
-        number: '03',
-        name: 'Generative Crisis Scenario War-Gaming & Dynamic Response Playbooks',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments', 'Disruption recovery latency'],
-        whyNow: 'LLMs fine-tuned on organizational crisis procedures can simulate complex multi-party failure scenarios and draft tailored action plans in seconds.',
-        aiUseCase: 'Interactive generative simulation model running synthetic stress tests against supply shocks, producing executable cross-functional playbooks.',
-        strategicOpportunity: 'Compress crisis response synthesis from 72 hours of executive meetings into 15 minutes of guided, cross-departmental coordination.',
-        executionApproach: 'Ingest legacy BCP policies, contract templates, and org charts into a secure RAG workspace with pre-configured crisis scenarios.',
-        requiredProprietaryData: 'Business Continuity Plans (BCP), executive decision matrix, customer escalation trees, supplier SLAs.',
-        relevantPublicData: 'Historical supply chain shock case studies, macroeconomic interest rate indices, regulatory compliance templates.',
-        cost: '$',
-        timeline: '<5 days',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 3,
-        prioritizationRationale: 'Fastest time-to-value (<5 days) with lowest capital outlay ($), providing executive leadership with immediate decision speed during live shocks.',
-      },
-      {
-        id: 'opp-4',
-        number: '04',
-        name: 'Federated Real-Time Warehouse Inventory Balancing',
-        challengesAddressed: ['Lack of real-time inventory visibility across 3PL partner warehouses'],
-        whyNow: 'Federated learning algorithms allow multi-party inventory synchronization without exposing confidential batch quantities.',
-        aiUseCase: 'Distributed machine learning agents predicting localized stockout risks and suggesting cross-facility balancing transfers.',
-        strategicOpportunity: 'Cut safety stock holding costs by 18% while increasing order fulfillment reliability to 99.4%.',
-        executionApproach: 'Implement lightweight API connector modules for top 3PL warehouse management systems (WMS).',
-        requiredProprietaryData: 'WMS inventory logs, SKU velocity metrics, regional order demand history, safety buffer thresholds.',
-        relevantPublicData: 'Regional consumption indexes, holiday transportation load restrictions.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-5',
-        number: '05',
-        name: 'Industrial OT/SCADA Anomaly Detection & Self-Healing Telemetry',
-        challengesAddressed: ['Cybersecurity intrusions targeting legacy industrial SCADA systems'],
-        whyNow: 'Unsupervised deep anomaly detection on sensor time-series data catches zero-day lateral movement before operational degradation.',
-        aiUseCase: 'Edge AI inference agents analyzing PLC bus traffic and sensor vibrations to detect unauthorized tampering or component wear.',
-        strategicOpportunity: 'Eliminate unplanned manufacturing downtime from cyber-physical incidents and prevent factory line halts.',
-        executionApproach: 'Deploy edge gateway sniffers at critical production lines connected to a central SIEM security dashboard.',
-        requiredProprietaryData: 'SCADA network PCAP logs, PLC firmware baselines, maintenance work orders, sensor time-series streams.',
-        relevantPublicData: 'MITRE ATT&CK for ICS threat feeds, CVE vulnerability disclosures.',
-        cost: '$$$',
-        timeline: '<5 months',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-6',
-        number: '06',
-        name: 'Autonomous Contract Force Majeure & SLA Renegotiation Assistant',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments', 'Supplier contract risk'],
-        whyNow: 'Domain-specific legal language models can parse thousands of vendor contracts and correlate disruption events with legal liabilities.',
-        aiUseCase: 'Contract intelligence agent identifying force majeure clauses, alternate sourcing covenants, and penalties across all supplier agreements.',
-        strategicOpportunity: 'Recover up to 12% in un-claimed supplier delay credits and mitigate legal exposure from downstream customer claims.',
-        executionApproach: 'OCR and ingest historical master service agreements into a structured contract clause knowledge graph.',
-        requiredProprietaryData: 'Signed vendor MSAs, purchase order terms, historical breach notices, customer contract SLAs.',
-        relevantPublicData: 'Uniform Commercial Code (UCC) case precedents, maritime arbitration standards.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-7',
-        number: '07',
-        name: 'Component Substitution & Engineering Redesign Recommender',
-        challengesAddressed: ['Single-source tier-2 chip and sensor suppliers'],
-        whyNow: 'Multimodal vector search can match electrical specifications, pin configurations, and thermal envelopes across millions of electronic parts.',
-        aiUseCase: 'Vector embedding search on global component databases recommending drop-in replacement ICs and generating schematic modification drafts.',
-        strategicOpportunity: 'Shorten engineering component requalification cycles from 6 months to 2 weeks during unexpected component obsolescence.',
-        executionApproach: 'Build proprietary CAD and BOM index linked to global component distributor APIs.',
-        requiredProprietaryData: 'Internal CAD schematics, PCB layout files, internal qualification test records, approved vendor lists (AVL).',
-        relevantPublicData: 'Distributor component datasheets, manufacturer obsolescence notices, RoHS/REACH compliance logs.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-8',
-        number: '08',
-        name: 'Proactive Customer Impact Telemetry & SLA Transparency Portal',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments'],
-        whyNow: 'Event-driven customer engagement models can generate personalized impact notices and revised delivery estimates before customers call support.',
-        aiUseCase: 'Natural language generation pipeline that maps upstream logistics delays to specific customer orders and drafts proactive communication.',
-        strategicOpportunity: 'Transform disruption into a loyalty driver by providing radical delivery transparency and automated credits.',
-        executionApproach: 'Integrate CRM order management with real-time supply chain event stream; enable automated account manager notifications.',
-        requiredProprietaryData: 'CRM account records, customer order queues, contractual delivery penalty terms, account tiering rules.',
-        relevantPublicData: 'Carrier transit statuses, regional postal disruption advisories.',
-        cost: '$',
-        timeline: '<5 days',
-        priorityTier: 'Low',
-        isTopPriority: false,
-      },
-    ],
-    top3Priorities: [
-      {
-        rank: 1,
-        opportunityId: 'opp-1',
-        name: 'Predictive Multi-Tier Supplier Weak-Signal Radar',
-        rationale: 'Addresses the foundational vulnerability (tier-2/3 supplier visibility) with immediate strategic payoff and moderate complexity.',
-      },
-      {
-        rank: 2,
-        opportunityId: 'opp-2',
-        name: 'Dynamic 3PL Transit Interruption & Autonomous Freight Rerouting',
-        rationale: 'Directly solves acute logistics delay variances and customs bottlenecks with immediate operational cost savings and high feasibility.',
-      },
-      {
-        rank: 3,
-        opportunityId: 'opp-3',
-        name: 'Generative Crisis Scenario War-Gaming & Dynamic Response Playbooks',
-        rationale: 'Provides ultra-rapid executive deployment (<5 days, $) to eliminate coordination friction during live disruption events.',
-      },
-    ],
-    prioritisationOverview: 'The Top 3 priorities balance immediate crisis command agility (<5 days), actionable logistics mitigation (<5 weeks), and deep systemic supplier visibility ($$). They directly ground the human-defined vulnerabilities without forcing high-risk capital expenditure.',
-    generatedAt: Date.now(),
   };
+  const contextFieldLengths = Object.entries(sourceOfTruth.workshopContext)
+    .filter(([, value]) => typeof value === 'string' && value.trim())
+    .map(([field, value]) => ({ field, length: String(value).length }));
+  const searchFieldLengths = Object.entries(sourceOfTruth.searchStageInput).map(([field, value]) => ({
+    field,
+    length: Array.isArray(value) ? value.length : typeof value === 'string' ? value.length : Number(Boolean(value)),
+  }));
+  console.info('[GeminiService] Opportunity generation request', { requestId, contextFieldLengths, searchFieldLengths });
 
+  const fallback = buildDynamicOpportunityShortlist(humanDiscussion, workshopContext, requestId);
+  fallback.generationMetadata = {
+    provider: 'gemini', model: OPPORTUNITY_MODEL, generatedAt, requestId, generationMode: 'fallback',
+  };
   if (!ai) {
-    return fallbackOpportunities;
+    console.warn(`[GeminiService] ${requestId} using explicit degraded fallback: GEMINI_API_KEY is unavailable.`);
+    return fallback;
   }
 
   try {
-    const formattedContext = formatWorkshopContext(workshopContext);
-    const prompt = `You are a world-class executive strategy advisor facilitating a high-stakes executive workshop on "${contextTitle}".
+    const prompt = `You are a world-class executive strategy advisor. Generate a fresh opportunity set for request ${requestId}.
 
-${formattedContext ? `${formattedContext}\n\nUse the workshop context to improve relevance, but do not invent company-specific facts. Generate opportunities relevant to the stated organization, process, stakeholders, strategic priorities, and constraints.\n` : ''}
+SOURCE OF TRUTH (JSON):
+${JSON.stringify(sourceOfTruth, null, 2)}
 
-The executive group has completed SEARCH (Prepare Context and Identify Challenges) and provided their confirmed challenges and initial AI ideas:
+Use every populated source field. Confirmed and manually edited challenges are authoritative. Preserve participant meaning and do not invent organisation-specific facts. Reason afresh for this request: do not use a fixed opportunity catalogue or recurring named archetypes. Explore materially different intervention points, users, decisions, workflows, and value mechanisms while remaining practical and grounded.
 
-HUMAN-IDENTIFIED CHALLENGES:
-${humanDiscussion.challenges.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+First derive a broad candidate space with themes, value levers, AI methods, and delivery patterns grounded in the source of truth. Then synthesize and rank exactly 8 distinct strategic AI opportunities from that space. Balance relevance, impact, urgency, data availability, feasibility, cost, speed, and decision quality. Exactly three must be marked as top priorities.
 
-HUMAN INITIAL AI IDEAS:
-${humanDiscussion.initialAIIdeas.map((idea, i) => `${i + 1}. ${idea}`).join('\n')}
-
-${humanDiscussion.rawTextNotes ? `ADDITIONAL TEAM NOTES: ${humanDiscussion.rawTextNotes}` : ''}
-
-STAGE 3 TASK:
-1. Conduct a concise executive Challenge Assessment of the human-identified challenges (strategic significance, 2-3 yr horizon impact, urgency & likelihood, cross-ecosystem dependencies, key assumptions/overlaps). Preserve the executive group's framing.
-2. Identify 8 to 10 distinct, strategically significant AI-enabled opportunities that address the team's challenges.
-   Each opportunity MUST:
-   - address one or more participant-defined challenges;
-   - be materially different from the others;
-   - represent a meaningful strategic response;
-   - avoid generic AI buzzwords;
-   - be specific enough for executive C-suite discussion.
-   - specify:
-     * id (e.g. "opp-1", "opp-2", etc.)
-     * number (e.g. "01", "02", etc.)
-     * name
-     * challengesAddressed (array of strings matching their inputs)
-     * whyNow (technological or macroeconomic catalyst)
-     * aiUseCase (exact AI technique/architecture)
-     * strategicOpportunity (business impact and resilience outcome)
-     * executionApproach (brief 1-2 sentence rollout path)
-     * requiredProprietaryData
-     * relevantPublicData
-     * relevantStakeholders (roles affected by or accountable for the use case)
-     * keyAssumption (the most important assumption to validate)
-     * potentialValue (the expected organizational or process value)
-     * cost: "$" (low), "$$" (medium), or "$$$" (high)
-     * timeline: "<5 days", "<5 weeks", or "<5 months"
-     * priorityTier: "High", "Medium", or "Low"
-     * isTopPriority: boolean (true for exactly top 3)
-     * top3Ranking: number (1, 2, or 3 for the top 3, omitted for others)
-     * prioritizationRationale: string (for top 3)
-3. Rank the Top 3 priorities with explicit justification balancing impact, urgency, data availability, feasibility, cost, speed, and decision quality.
-
-Return strict JSON matching this structure:
+Return strict JSON with this shape:
 {
   "challengeAssessment": {
-    "strategicSignificance": "string",
-    "impactNext2To3Years": "string",
-    "urgencyAndLikelihood": "string",
-    "crossEcosystemDependencies": "string",
+    "strategicSignificance": "string", "impactNext2To3Years": "string",
+    "urgencyAndLikelihood": "string", "crossEcosystemDependencies": "string",
     "keyAssumptionsOrOverlaps": "string"
   },
-  "opportunities": [
-    {
-      "id": "opp-1",
-      "number": "01",
-      "name": "string",
-      "challengesAddressed": ["string"],
-      "whyNow": "string",
-      "aiUseCase": "string",
-      "strategicOpportunity": "string",
-      "executionApproach": "string",
-      "requiredProprietaryData": "string",
-      "relevantPublicData": "string",
-      "relevantStakeholders": "string",
-      "keyAssumption": "string",
-      "potentialValue": "string",
-      "cost": "$$",
-      "timeline": "<5 weeks",
-      "priorityTier": "High",
-      "isTopPriority": true,
-      "top3Ranking": 1,
-      "prioritizationRationale": "string"
-    }
-  ],
-  "top3Priorities": [
-    {
-      "rank": 1,
-      "opportunityId": "opp-1",
-      "name": "string",
-      "rationale": "string"
-    }
-  ],
+  "candidateSpace": {
+    "themes": ["string"], "valueLevers": ["string"],
+    "aiMethods": ["string"], "deliveryPatterns": ["string"]
+  },
+  "opportunities": [{
+    "id": "temporary-id", "number": "01", "name": "string",
+    "challengesAddressed": ["participant input"], "whyNow": "string",
+    "aiUseCase": "specific AI technique or architecture", "strategicOpportunity": "string",
+    "executionApproach": "string", "requiredProprietaryData": "string",
+    "relevantPublicData": "string", "relevantStakeholders": "string",
+    "keyAssumption": "string", "potentialValue": "string",
+    "cost": "$ or $$ or $$$", "timeline": "<5 days or <5 weeks or <5 months",
+    "priorityTier": "High or Medium or Low", "isTopPriority": true,
+    "top3Ranking": 1, "prioritizationRationale": "string"
+  }],
+  "top3Priorities": [{"rank": 1, "opportunityId": "temporary-id", "name": "string", "rationale": "string"}],
   "prioritisationOverview": "string"
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: OPPORTUNITY_MODEL,
       contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3,
-      },
+      config: { responseMimeType: 'application/json', temperature: 0.85 },
     });
-
-    const parsed = parseCleanJson<AIExplorationOutput>(response.text || '', fallbackOpportunities);
+    const parsed = parseCleanJson<AIExplorationOutput>(response.text || '', fallback);
+    if (!Array.isArray(parsed.opportunities) || parsed.opportunities.length < 8 || !parsed.opportunities.slice(0, 8).every(isOpportunity)) {
+      console.error(`[GeminiService] ${requestId} returned an invalid schema; using degraded fallback.`);
+      return fallback;
+    }
+    parsed.opportunities = parsed.opportunities.slice(0, 8).map((opportunity, index) => ({
+      ...opportunity,
+      id: `${requestId}-opp-${index + 1}`,
+      number: String(index + 1).padStart(2, '0'),
+      isTopPriority: index < 3,
+      top3Ranking: index < 3 ? index + 1 : undefined,
+    }));
+    parsed.top3Priorities = parsed.opportunities.slice(0, 3).map((opportunity, index) => ({
+      rank: index + 1, opportunityId: opportunity.id, name: opportunity.name,
+      rationale: opportunity.prioritizationRationale || 'Ranked for relevance, value, and feasibility.',
+    }));
     parsed.generatedAt = Date.now();
+    parsed.generationMetadata = {
+      provider: 'gemini', model: OPPORTUNITY_MODEL, generatedAt: parsed.generatedAt,
+      requestId, generationMode: 'gemini',
+    };
     return parsed;
   } catch (error) {
-    console.error('[GeminiService] Error generating AI opportunities:', error);
-    return fallbackOpportunities;
+    console.error(`[GeminiService] ${requestId} Gemini generation failed:`, error);
+    console.warn(`[GeminiService] ${requestId} using explicit degraded fallback after Gemini failure.`);
+    return fallback;
   }
 }
 

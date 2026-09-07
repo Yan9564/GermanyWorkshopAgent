@@ -14,18 +14,18 @@ interface WorkshopContextFormProps {
 }
 
 const shortFields: { key: keyof WorkshopContext; label: string; placeholder: string }[] = [
-  { key: 'organization', label: 'Organization / Company', placeholder: 'Example: Acme Manufacturing' },
-  { key: 'industry', label: 'Industry / Sector', placeholder: 'Example: Industrial manufacturing' },
-  { key: 'businessUnit', label: 'Business Unit / Function', placeholder: 'Example: Global supply chain' },
+  { key: 'organization', label: 'Organization / Company', placeholder: 'Example: Your organisation' },
+  { key: 'industry', label: 'Industry / Sector', placeholder: 'Example: Your industry or sector' },
+  { key: 'businessUnit', label: 'Business Unit / Function', placeholder: 'Example: Relevant business function' },
 ];
 
 const longFields: { key: keyof WorkshopContext; label: string; placeholder: string }[] = [
-  { key: 'strategicPriorities', label: 'Strategic Business Priority', placeholder: 'Relevant goals, outcomes, or strategic commitments.' },
-  { key: 'objective', label: 'Objective', placeholder: 'What should this exercise help the group decide or achieve?' },
-  { key: 'processScope', label: 'Process / Workflow in Scope', placeholder: 'Which process, service, workflow, or decision is in scope?' },
-  { key: 'currentChallenges', label: 'Current Pain Points', placeholder: 'Known pain points or uncertainties.' },
-  { key: 'stakeholders', label: 'Stakeholders / Users', placeholder: 'Who uses, owns, or is affected by this process?' },
-  { key: 'constraints', label: 'Constraints', placeholder: 'Budget, timing, policy, technology, data, or operating constraints.' },
+  { key: 'strategicPriorities', label: 'Strategic Business Priority', placeholder: 'Key strategic goals or desired outcomes' },
+  { key: 'objective', label: 'Objective', placeholder: 'What would you like this exercise to achieve?' },
+  { key: 'processScope', label: 'Process / Workflow in Scope', placeholder: 'Business process or workflow being explored' },
+  { key: 'currentChallenges', label: 'Current Pain Points', placeholder: 'Current challenges, uncertainties, or unmet needs' },
+  { key: 'stakeholders', label: 'Stakeholders / Users', placeholder: 'Key stakeholders involved in or affected by the process' },
+  { key: 'constraints', label: 'Constraints', placeholder: 'Relevant budget, timing, policy, technology, or data constraints' },
 ];
 
 export const WorkshopContextForm: React.FC<WorkshopContextFormProps> = ({

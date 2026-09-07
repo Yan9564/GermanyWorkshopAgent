@@ -157,6 +157,19 @@ export interface AIExplorationOutput {
   }[];
   prioritisationOverview: string;
   generatedAt?: number;
+  candidateSpace?: {
+    themes: string[];
+    valueLevers: string[];
+    aiMethods: string[];
+    deliveryPatterns: string[];
+  };
+  generationMetadata?: {
+    provider: 'gemini';
+    model: string;
+    generatedAt: number;
+    requestId: string;
+    generationMode: 'gemini' | 'fallback';
+  };
 }
 
 export type ReviewDecision = 'KEEP' | 'CHALLENGE' | 'DISCARD';

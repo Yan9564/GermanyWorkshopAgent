@@ -53,11 +53,15 @@ async function startServer() {
   // SEARCH / Explore AI Opportunities based on confirmed human challenges
   app.post('/api/workshop/explore-opportunities', async (req, res) => {
     try {
-      const { humanDiscussion, contextTitle, workshopContext } = req.body;
+      const { humanDiscussion, contextTitle, workshopContext, challengeEntities } = req.body;
       if (!humanDiscussion) {
         return res.status(400).json({ error: 'Missing humanDiscussion data' });
       }
-      const output = await generateAIOpportunities(humanDiscussion, contextTitle || 'Service Continuity', workshopContext);
+      const manuallyEditedChallenges = Array.isArray(challengeEntities)
+        ? challengeEntities.map((challenge: { text?: unknown }) => challenge?.text)
+          .filter((text: unknown): text is string => typeof text === 'string' && Boolean(text.trim()))
+        : [];
+      const output = await generateAIOpportunities(humanDiscussion, contextTitle || 'AI opportunity exploration', workshopContext, manuallyEditedChallenges);
       res.json(output);
     } catch (error: any) {
       console.error('[API] /explore-opportunities error:', error);

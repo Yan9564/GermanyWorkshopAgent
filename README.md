@@ -32,3 +32,21 @@ Set `GEMINI_API_KEY` as described in `.env.example`. Without it, the existing de
 ## Partner assets
 
 The invitation-flyer logos were not present in this repository. Add approved assets named `cambridge-service-alliance-logo` and `fraunhofer-iao-logo` before replacing the footer’s clearly labelled placeholders; no fabricated logos are included.
+# Opportunity generation on Vercel
+
+The browser calls `POST /api/workshop/explore-opportunities`. On Vercel this is
+implemented by `api/workshop/explore-opportunities.ts`; local development uses
+the matching Express route in `server.ts`. Both handlers call the same Gemini
+service and return `generationMetadata`, including a safe request ID and a
+`generationMode` of `gemini` or `fallback`.
+
+Configure `GEMINI_API_KEY` as a server-side variable in **Vercel → Project →
+Settings → Environment Variables**, then redeploy so the function receives the
+new value. Never use a `VITE_` prefix for this secret.
+
+For each request Gemini derives candidate-space dimensions from all populated
+workshop context and confirmed Search inputs, then synthesizes and ranks eight
+shortlisted opportunities. Those grounded dimensions, shortlist items, and
+confirmed challenges are combined programmatically into a 500-item long list;
+this avoids asking the model for 500 verbose records while keeping every long-
+list candidate traceable to the current session.

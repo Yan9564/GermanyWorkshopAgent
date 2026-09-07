@@ -38,6 +38,7 @@ import {
 import { getMainStageForStep } from './workshopStages';
 import { createInteractionEvent, createResearchId } from './researchLog';
 import { buildLongList } from './longList';
+import { buildDynamicOpportunityShortlist } from './dynamicOpportunities';
 
 const isSubstantiveChallenge = (value: string) => {
   const text = value.trim();
@@ -169,6 +170,10 @@ export default function App() {
     setSession((prev) => ({
       ...prev,
       context,
+      // Context is an input to generation; discard results derived from an older context.
+      exploration: null,
+      longList: [],
+      humanReview: { reviews: {}, whiteboardFeedback: null },
       currentStage: prev.currentStage === 1 ? 2 : prev.currentStage,
       mainStage: prev.currentStage === 1 ? 'search' : prev.mainStage,
       updatedAt: Date.now(),
@@ -324,6 +329,10 @@ export default function App() {
           isConfirmed: false,
         },
         challengeEntities,
+        // Notes are an input to generation; never retain a shortlist based on stale notes.
+        exploration: null,
+        longList: [],
+        humanReview: { reviews: {}, whiteboardFeedback: null },
         updatedAt: Date.now(),
       }));
     } finally {
@@ -331,9 +340,15 @@ export default function App() {
     }
   };
 
-  // --- Page 3 -> Page 4: Confirm Understanding & Explore Opportunities ---
-  const handleConfirmUnderstanding = async (confirmedData: HumanDiscussionData) => {
+  const generateOpportunities = async (confirmedData: HumanDiscussionData) => {
     setIsLoading(true);
+    setSession((prev) => ({
+      ...prev,
+      exploration: null,
+      longList: [],
+      humanReview: { reviews: {}, whiteboardFeedback: null },
+      updatedAt: Date.now(),
+    }));
     try {
       let explorationResult: AIExplorationOutput | null = null;
 
@@ -345,28 +360,47 @@ export default function App() {
             humanDiscussion: confirmedData,
             contextTitle: session.context.title,
             workshopContext: session.context,
+            challengeEntities: session.challengeEntities || [],
+            generationNonce: `${Date.now()}-${Math.random()}`,
           }),
         });
         if (res.ok) {
           explorationResult = await res.json();
+        } else {
+          console.error(`Opportunity generation endpoint returned HTTP ${res.status}.`);
         }
       } catch (e) {
-        console.warn('Exploration API failed, using sample exploration fallback:', e);
+        console.warn('Exploration API failed, using dynamic input-based fallback:', e);
       }
 
       if (!explorationResult) {
-        explorationResult = SAMPLE_EXPLORATION_OUTPUT;
+        const requestId = `browser-fallback-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        explorationResult = buildDynamicOpportunityShortlist(confirmedData, session.context, requestId);
+        explorationResult.generationMetadata = {
+          provider: 'gemini', model: 'unavailable', generatedAt: Date.now(), requestId, generationMode: 'fallback',
+        };
+        console.warn('[OpportunityGeneration] Explicit degraded browser fallback is active.', explorationResult.generationMetadata);
       }
 
       explorationResult = {
         ...explorationResult,
-        opportunities: explorationResult.opportunities.map((opportunity) => ({
+        opportunities: explorationResult.opportunities.slice(0, 8).map((opportunity, index) => ({
           ...opportunity,
+          number: String(index + 1).padStart(2, '0'),
+          isTopPriority: index < 3,
+          top3Ranking: index < 3 ? index + 1 : undefined,
           source: opportunity.source || 'ai',
           originalAIValue: opportunity.originalAIValue || { ...opportunity },
         })),
       };
-      const longList = buildLongList(explorationResult.opportunities, confirmedData.challenges, session.context);
+      console.info('[OpportunityGeneration] Response metadata', explorationResult.generationMetadata);
+      const longList = buildLongList(
+        explorationResult.opportunities,
+        confirmedData.challenges,
+        session.context,
+        500,
+        explorationResult.candidateSpace,
+      );
 
       setSession((prev) => ({
         ...prev,
@@ -380,6 +414,19 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // --- Page 3 -> Page 4: Confirm Understanding & Explore Opportunities ---
+  const handleConfirmUnderstanding = async (confirmedData: HumanDiscussionData) => {
+    await generateOpportunities(confirmedData);
+  };
+
+  const handleRegenerateOpportunities = async () => {
+    await generateOpportunities({
+      ...session.humanDiscussion,
+      challenges: (session.challengeEntities || []).map((challenge) => challenge.text),
+      isConfirmed: true,
+    });
   };
 
   // --- Page 4 -> Page 5: Confirm Top 3 & Prepare Stress Test ---
@@ -588,9 +635,11 @@ export default function App() {
 
         {!isEditingContext && currentStage === 4 && (
           <Page4ExploreOpportunities
-            opportunities={session.exploration?.opportunities || SAMPLE_EXPLORATION_OUTPUT.opportunities}
+            opportunities={session.exploration?.opportunities || []}
             onConfirmTop3={handleConfirmTop3}
             isSubmitting={isLoading}
+            isRegenerating={isLoading}
+            onRegenerate={handleRegenerateOpportunities}
             initialReviews={Object.fromEntries(
               Object.entries(session.humanReview?.reviews || {}).map(([id, review]) => [
                 id,
@@ -610,6 +659,7 @@ export default function App() {
             }))}
             onOpportunitiesChange={updateOpportunities}
             onInteraction={logInteraction}
+            longList={session.longList || []}
           />
         )}
 

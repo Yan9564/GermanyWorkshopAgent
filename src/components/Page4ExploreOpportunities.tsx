@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sparkles,
   ArrowRight,
@@ -33,6 +33,8 @@ interface Page4ExploreOpportunitiesProps {
   onOpportunitiesChange: (opportunities: AIOpportunity[]) => void;
   onInteraction: (event: WorkshopInteractionInput) => void;
   longList?: AIOpportunity[];
+  onRegenerate: () => void;
+  isRegenerating?: boolean;
 }
 
 export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps> = ({
@@ -44,6 +46,8 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
   onOpportunitiesChange,
   onInteraction,
   longList = [],
+  onRegenerate,
+  isRegenerating = false,
 }) => {
   const [items, setItems] = useState<AIOpportunity[]>(opportunities);
   const [reviews, setReviews] = useState<Record<string, ReviewDecision>>(initialReviews);
@@ -53,6 +57,16 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
   const [editDraft, setEditDraft] = useState<AIOpportunity | null>(null);
   const [resonance, setResonance] = useState<'yes' | 'partly' | 'no' | ''>('');
   const [feedback, setFeedback] = useState('');
+
+  useEffect(() => {
+    setItems(opportunities);
+    setExpandedId(null);
+    setEditingId(null);
+  }, [opportunities]);
+
+  useEffect(() => {
+    setReviews(initialReviews);
+  }, [initialReviews]);
 
   const handleDecision = (id: string, decision: ReviewDecision) => {
     const previous = reviews[id]?.toLowerCase() || 'unclassified';
@@ -174,6 +188,14 @@ export const Page4ExploreOpportunities: React.FC<Page4ExploreOpportunitiesProps>
         </p>
         <p className="mt-2 text-xs text-slate-500">You can download the spreadsheet to revisit and examine the full long list.</p>
         <button type="button" disabled={!longList.length} onClick={() => downloadLongList(longList)} className="mt-3 px-4 py-2 rounded-lg bg-white border border-indigo-200 text-xs font-bold text-indigo-700 disabled:opacity-40">Download long-list spreadsheet</button>
+        <button
+          type="button"
+          disabled={isRegenerating}
+          onClick={onRegenerate}
+          className="mt-3 ml-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:text-indigo-700 disabled:opacity-40"
+        >
+          {isRegenerating ? 'Generating opportunities from your workshop inputs...' : 'Regenerate opportunities'}
+        </button>
       </div>
 
       {/* Opportunities List */}
