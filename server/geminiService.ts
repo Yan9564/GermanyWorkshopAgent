@@ -16,6 +16,7 @@ import {
   UploadedWhiteboard,
   WorkshopContext,
 } from '../src/types';
+import { buildDynamicOpportunityShortlist } from '../src/dynamicOpportunities';
 
 // Lazy initialization of Gemini client
 let genAIClient: GoogleGenAI | null = null;
@@ -189,7 +190,7 @@ Respond with strict JSON matching this schema:
 }
 
 /**
- * Generate 8-10 distinct AI-enabled strategic opportunities (SEARCH — Explore AI Opportunities)
+ * Generate 8 distinct AI-enabled strategic opportunities (SEARCH — Explore AI Opportunities)
  */
 export async function generateAIOpportunities(
   humanDiscussion: HumanDiscussionData,
@@ -198,173 +199,7 @@ export async function generateAIOpportunities(
 ): Promise<AIExplorationOutput> {
   const ai = getGenAI();
 
-  const fallbackOpportunities: AIExplorationOutput = {
-    challengeAssessment: {
-      strategicSignificance: 'High systemic vulnerability across extended multi-tier supply networks and interconnected digital logistics channels.',
-      impactNext2To3Years: 'Severe financial and reputational downside if single-point component failures or cyber/physical disruptions cascade unchecked.',
-      urgencyAndLikelihood: 'High likelihood of recurring regional bottlenecks; immediate urgency to establish predictive weak-signal monitoring.',
-      crossEcosystemDependencies: 'Critical dependencies across Tier-2/3 raw material suppliers, 3PL logistics carriers, customs brokers, and enterprise ERP backbones.',
-      keyAssumptionsOrOverlaps: 'Assumes partner ecosystem willingness to share authenticated operational telemetry and federated data streams.',
-    },
-    opportunities: [
-      {
-        id: 'opp-1',
-        number: '01',
-        name: 'Predictive Multi-Tier Supplier Weak-Signal Radar',
-        challengesAddressed: ['Single-source tier-2 chip and sensor suppliers', 'Geopolitical volatility'],
-        whyNow: 'Advancements in multi-modal knowledge graphs and open-source intelligence enable early detection of distress before order cancellation.',
-        aiUseCase: 'Graph neural networks + weak-signal news/satellite NLP tracking financial stress, labor disputes, and regional anomalies across tier-1 to tier-3 nodes.',
-        strategicOpportunity: 'Convert reactive emergency expediting into 14-day advance re-allocation, protecting gross margin and critical SLAs.',
-        executionApproach: 'Integrate existing procurement master data with commercial trade-lane intelligence feeds; deploy automated risk scoring dashboard.',
-        requiredProprietaryData: 'Tier-1 supplier Bill of Materials (BOM), historical purchase orders, component lead times, and SLA penalty clauses.',
-        relevantPublicData: 'Global customs manifests (Bills of Lading), localized weather anomalies, regional regulatory notices, satellite port traffic.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 1,
-        prioritizationRationale: 'Highest immediate impact on service continuity by addressing unmonitored Tier-2/3 blind spots with minimal upfront ERP friction.',
-      },
-      {
-        id: 'opp-2',
-        number: '02',
-        name: 'Dynamic 3PL Transit Interruption & Autonomous Freight Rerouting',
-        challengesAddressed: ['Port congestion and customs bottlenecks', '3PL transit untracked delays'],
-        whyNow: 'Real-time IoT container feeds paired with predictive ETA machine learning can simulate trade-lane choke points in minutes.',
-        aiUseCase: 'Reinforcement learning & spatial graph optimization predicting container dwell times and auto-generating alternate carrier routing plans.',
-        strategicOpportunity: 'Reduce transit delay variances from 21 days to under 48 hours; safeguard just-in-time delivery for high-value product lines.',
-        executionApproach: 'Connect telematics APIs from top 5 logistics carriers into a unified route simulator; provide one-click dispatcher approvals.',
-        requiredProprietaryData: 'Carrier contracts, real-time EDI/API shipping milestones, warehouse receiving capacities, dynamic freight rate cards.',
-        relevantPublicData: 'AIS vessel telemetry, port terminal dwell indexes, border customs processing queue metrics, weather forecasts.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 2,
-        prioritizationRationale: 'Directly mitigates primary logistics choke points with quantifiable ROI in reduced demurrage fees and preserved customer delivery SLAs.',
-      },
-      {
-        id: 'opp-3',
-        number: '03',
-        name: 'Generative Crisis Scenario War-Gaming & Dynamic Response Playbooks',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments', 'Disruption recovery latency'],
-        whyNow: 'LLMs fine-tuned on organizational crisis procedures can simulate complex multi-party failure scenarios and draft tailored action plans in seconds.',
-        aiUseCase: 'Interactive generative simulation model running synthetic stress tests against supply shocks, producing executable cross-functional playbooks.',
-        strategicOpportunity: 'Compress crisis response synthesis from 72 hours of executive meetings into 15 minutes of guided, cross-departmental coordination.',
-        executionApproach: 'Ingest legacy BCP policies, contract templates, and org charts into a secure RAG workspace with pre-configured crisis scenarios.',
-        requiredProprietaryData: 'Business Continuity Plans (BCP), executive decision matrix, customer escalation trees, supplier SLAs.',
-        relevantPublicData: 'Historical supply chain shock case studies, macroeconomic interest rate indices, regulatory compliance templates.',
-        cost: '$',
-        timeline: '<5 days',
-        priorityTier: 'High',
-        isTopPriority: true,
-        top3Ranking: 3,
-        prioritizationRationale: 'Fastest time-to-value (<5 days) with lowest capital outlay ($), providing executive leadership with immediate decision speed during live shocks.',
-      },
-      {
-        id: 'opp-4',
-        number: '04',
-        name: 'Federated Real-Time Warehouse Inventory Balancing',
-        challengesAddressed: ['Lack of real-time inventory visibility across 3PL partner warehouses'],
-        whyNow: 'Federated learning algorithms allow multi-party inventory synchronization without exposing confidential batch quantities.',
-        aiUseCase: 'Distributed machine learning agents predicting localized stockout risks and suggesting cross-facility balancing transfers.',
-        strategicOpportunity: 'Cut safety stock holding costs by 18% while increasing order fulfillment reliability to 99.4%.',
-        executionApproach: 'Implement lightweight API connector modules for top 3PL warehouse management systems (WMS).',
-        requiredProprietaryData: 'WMS inventory logs, SKU velocity metrics, regional order demand history, safety buffer thresholds.',
-        relevantPublicData: 'Regional consumption indexes, holiday transportation load restrictions.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-5',
-        number: '05',
-        name: 'Industrial OT/SCADA Anomaly Detection & Self-Healing Telemetry',
-        challengesAddressed: ['Cybersecurity intrusions targeting legacy industrial SCADA systems'],
-        whyNow: 'Unsupervised deep anomaly detection on sensor time-series data catches zero-day lateral movement before operational degradation.',
-        aiUseCase: 'Edge AI inference agents analyzing PLC bus traffic and sensor vibrations to detect unauthorized tampering or component wear.',
-        strategicOpportunity: 'Eliminate unplanned manufacturing downtime from cyber-physical incidents and prevent factory line halts.',
-        executionApproach: 'Deploy edge gateway sniffers at critical production lines connected to a central SIEM security dashboard.',
-        requiredProprietaryData: 'SCADA network PCAP logs, PLC firmware baselines, maintenance work orders, sensor time-series streams.',
-        relevantPublicData: 'MITRE ATT&CK for ICS threat feeds, CVE vulnerability disclosures.',
-        cost: '$$$',
-        timeline: '<5 months',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-6',
-        number: '06',
-        name: 'Autonomous Contract Force Majeure & SLA Renegotiation Assistant',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments', 'Supplier contract risk'],
-        whyNow: 'Domain-specific legal language models can parse thousands of vendor contracts and correlate disruption events with legal liabilities.',
-        aiUseCase: 'Contract intelligence agent identifying force majeure clauses, alternate sourcing covenants, and penalties across all supplier agreements.',
-        strategicOpportunity: 'Recover up to 12% in un-claimed supplier delay credits and mitigate legal exposure from downstream customer claims.',
-        executionApproach: 'OCR and ingest historical master service agreements into a structured contract clause knowledge graph.',
-        requiredProprietaryData: 'Signed vendor MSAs, purchase order terms, historical breach notices, customer contract SLAs.',
-        relevantPublicData: 'Uniform Commercial Code (UCC) case precedents, maritime arbitration standards.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-7',
-        number: '07',
-        name: 'Component Substitution & Engineering Redesign Recommender',
-        challengesAddressed: ['Single-source tier-2 chip and sensor suppliers'],
-        whyNow: 'Multimodal vector search can match electrical specifications, pin configurations, and thermal envelopes across millions of electronic parts.',
-        aiUseCase: 'Vector embedding search on global component databases recommending drop-in replacement ICs and generating schematic modification drafts.',
-        strategicOpportunity: 'Shorten engineering component requalification cycles from 6 months to 2 weeks during unexpected component obsolescence.',
-        executionApproach: 'Build proprietary CAD and BOM index linked to global component distributor APIs.',
-        requiredProprietaryData: 'Internal CAD schematics, PCB layout files, internal qualification test records, approved vendor lists (AVL).',
-        relevantPublicData: 'Distributor component datasheets, manufacturer obsolescence notices, RoHS/REACH compliance logs.',
-        cost: '$$',
-        timeline: '<5 weeks',
-        priorityTier: 'Medium',
-        isTopPriority: false,
-      },
-      {
-        id: 'opp-8',
-        number: '08',
-        name: 'Proactive Customer Impact Telemetry & SLA Transparency Portal',
-        challengesAddressed: ['Fragmented customer communication and inaccurate SLA commitments'],
-        whyNow: 'Event-driven customer engagement models can generate personalized impact notices and revised delivery estimates before customers call support.',
-        aiUseCase: 'Natural language generation pipeline that maps upstream logistics delays to specific customer orders and drafts proactive communication.',
-        strategicOpportunity: 'Transform disruption into a loyalty driver by providing radical delivery transparency and automated credits.',
-        executionApproach: 'Integrate CRM order management with real-time supply chain event stream; enable automated account manager notifications.',
-        requiredProprietaryData: 'CRM account records, customer order queues, contractual delivery penalty terms, account tiering rules.',
-        relevantPublicData: 'Carrier transit statuses, regional postal disruption advisories.',
-        cost: '$',
-        timeline: '<5 days',
-        priorityTier: 'Low',
-        isTopPriority: false,
-      },
-    ],
-    top3Priorities: [
-      {
-        rank: 1,
-        opportunityId: 'opp-1',
-        name: 'Predictive Multi-Tier Supplier Weak-Signal Radar',
-        rationale: 'Addresses the foundational vulnerability (tier-2/3 supplier visibility) with immediate strategic payoff and moderate complexity.',
-      },
-      {
-        rank: 2,
-        opportunityId: 'opp-2',
-        name: 'Dynamic 3PL Transit Interruption & Autonomous Freight Rerouting',
-        rationale: 'Directly solves acute logistics delay variances and customs bottlenecks with immediate operational cost savings and high feasibility.',
-      },
-      {
-        rank: 3,
-        opportunityId: 'opp-3',
-        name: 'Generative Crisis Scenario War-Gaming & Dynamic Response Playbooks',
-        rationale: 'Provides ultra-rapid executive deployment (<5 days, $) to eliminate coordination friction during live disruption events.',
-      },
-    ],
-    prioritisationOverview: 'The Top 3 priorities balance immediate crisis command agility (<5 days), actionable logistics mitigation (<5 weeks), and deep systemic supplier visibility ($$). They directly ground the human-defined vulnerabilities without forcing high-risk capital expenditure.',
-    generatedAt: Date.now(),
-  };
+  const fallbackOpportunities: AIExplorationOutput = buildDynamicOpportunityShortlist(humanDiscussion, workshopContext);
 
   if (!ai) {
     return fallbackOpportunities;
@@ -388,7 +223,7 @@ ${humanDiscussion.rawTextNotes ? `ADDITIONAL TEAM NOTES: ${humanDiscussion.rawTe
 
 STAGE 3 TASK:
 1. Conduct a concise executive Challenge Assessment of the human-identified challenges (strategic significance, 2-3 yr horizon impact, urgency & likelihood, cross-ecosystem dependencies, key assumptions/overlaps). Preserve the executive group's framing.
-2. Identify 8 to 10 distinct, strategically significant AI-enabled opportunities that address the team's challenges.
+2. Identify exactly 8 distinct, strategically significant AI-enabled opportunities that address the team's challenges.
    Each opportunity MUST:
    - address one or more participant-defined challenges;
    - be materially different from the others;
@@ -470,6 +305,18 @@ Return strict JSON matching this structure:
     });
 
     const parsed = parseCleanJson<AIExplorationOutput>(response.text || '', fallbackOpportunities);
+    parsed.opportunities = parsed.opportunities.slice(0, 8).map((opportunity, index) => ({
+      ...opportunity,
+      number: String(index + 1).padStart(2, '0'),
+      isTopPriority: index < 3,
+      top3Ranking: index < 3 ? index + 1 : undefined,
+    }));
+    parsed.top3Priorities = parsed.opportunities.slice(0, 3).map((opportunity, index) => ({
+      rank: index + 1,
+      opportunityId: opportunity.id,
+      name: opportunity.name,
+      rationale: opportunity.prioritizationRationale || 'Ranked for relevance, value, and feasibility.',
+    }));
     parsed.generatedAt = Date.now();
     return parsed;
   } catch (error) {
