@@ -192,7 +192,7 @@ export const Page2TeamThinking: React.FC<Page2TeamThinkingProps> = ({
           <textarea
             value={textNotes}
             onChange={(e) => setTextNotes(e.target.value)}
-            placeholder="Type your team's main challenges and any initial ideas here... (e.g., Tier-2 supplier fragility, port transit delays, legacy cyber vulnerabilities)"
+            placeholder="Type your team's main challenges, observations, and any initial ideas here..."
             rows={5}
             className="w-full p-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-slate-800 placeholder-slate-400 text-sm leading-relaxed transition-all resize-none"
           />

@@ -14,19 +14,20 @@ import {
 } from '../types';
 
 export const DEFAULT_WORKSHOP_CONTEXT: WorkshopContext = {
-  title: 'Service Continuity and Resilient Supply Chains',
-  theme: 'Cross-Ecosystem Resilience & Proactive Disruption Recovery',
-  background:
-    'Organisations increasingly depend on interconnected suppliers, logistics networks, technology platforms, data infrastructure, partners and customers. Disruptions may originate from geopolitical events, supply-chain interruptions, technology failures, cybersecurity incidents, economic instability, regulatory change or other unexpected developments. A disruption in one part of this ecosystem may have consequences elsewhere with little warning.',
-  coreQuestion:
-    'How can AI help the organisation anticipate, respond to and recover from disruption while maintaining continuity of service?',
-  objective:
-    'The objective is NOT simply to identify AI technologies. The objective is to determine where AI could materially strengthen business resilience, service continuity, strategic response and decision quality.',
-  workshopTopic: 'Service Continuity and Resilient Supply Chains',
-  workshopObjective:
-    'Determine where AI could materially strengthen business resilience, service continuity, strategic response and decision quality.',
-  processScope: 'Cross-ecosystem disruption sensing, response and service recovery',
-  stakeholders: 'Executive committee, operations, procurement, logistics, technology and risk leaders',
+  title: '',
+  theme: '',
+  background: '',
+  coreQuestion: '',
+  objective: '',
+  organization: '',
+  industry: '',
+  businessUnit: '',
+  processScope: '',
+  stakeholders: '',
+  currentChallenges: '',
+  strategicPriorities: '',
+  constraints: '',
+  additionalContext: '',
 };
 
 export const SAMPLE_EXPLORATION_OUTPUT: AIExplorationOutput = {

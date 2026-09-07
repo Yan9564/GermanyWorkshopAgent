@@ -38,6 +38,7 @@ import {
 import { getMainStageForStep } from './workshopStages';
 import { createInteractionEvent, createResearchId } from './researchLog';
 import { buildLongList } from './longList';
+import { buildDynamicOpportunityShortlist } from './dynamicOpportunities';
 
 const isSubstantiveChallenge = (value: string) => {
   const text = value.trim();
@@ -169,6 +170,10 @@ export default function App() {
     setSession((prev) => ({
       ...prev,
       context,
+      // Context is an input to generation; discard results derived from an older context.
+      exploration: null,
+      longList: [],
+      humanReview: { reviews: {}, whiteboardFeedback: null },
       currentStage: prev.currentStage === 1 ? 2 : prev.currentStage,
       mainStage: prev.currentStage === 1 ? 'search' : prev.mainStage,
       updatedAt: Date.now(),
@@ -324,6 +329,10 @@ export default function App() {
           isConfirmed: false,
         },
         challengeEntities,
+        // Notes are an input to generation; never retain a shortlist based on stale notes.
+        exploration: null,
+        longList: [],
+        humanReview: { reviews: {}, whiteboardFeedback: null },
         updatedAt: Date.now(),
       }));
     } finally {
@@ -351,17 +360,20 @@ export default function App() {
           explorationResult = await res.json();
         }
       } catch (e) {
-        console.warn('Exploration API failed, using sample exploration fallback:', e);
+        console.warn('Exploration API failed, using dynamic input-based fallback:', e);
       }
 
       if (!explorationResult) {
-        explorationResult = SAMPLE_EXPLORATION_OUTPUT;
+        explorationResult = buildDynamicOpportunityShortlist(confirmedData, session.context);
       }
 
       explorationResult = {
         ...explorationResult,
-        opportunities: explorationResult.opportunities.map((opportunity) => ({
+        opportunities: explorationResult.opportunities.slice(0, 8).map((opportunity, index) => ({
           ...opportunity,
+          number: String(index + 1).padStart(2, '0'),
+          isTopPriority: index < 3,
+          top3Ranking: index < 3 ? index + 1 : undefined,
           source: opportunity.source || 'ai',
           originalAIValue: opportunity.originalAIValue || { ...opportunity },
         })),
@@ -588,7 +600,7 @@ export default function App() {
 
         {!isEditingContext && currentStage === 4 && (
           <Page4ExploreOpportunities
-            opportunities={session.exploration?.opportunities || SAMPLE_EXPLORATION_OUTPUT.opportunities}
+            opportunities={session.exploration?.opportunities || buildDynamicOpportunityShortlist(session.humanDiscussion, session.context).opportunities}
             onConfirmTop3={handleConfirmTop3}
             isSubmitting={isLoading}
             initialReviews={Object.fromEntries(
